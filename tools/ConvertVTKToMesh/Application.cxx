@@ -47,9 +47,10 @@ Application(
   r.close( );
 
   // Materials file
+  this->m_MaterialName = m.stem( ).string( );
   auto mat_file = m.parent_path( ) / "material.material";
   std::ofstream n( mat_file.string( ).c_str( ) );
-  n << "material " << m.stem( ).string( ) << std::endl;
+  n << "material " << this->m_MaterialName << std::endl;
   n << "{" << std::endl;
   n << "   technique" << std::endl;
   n << "   {" << std::endl;
@@ -140,7 +141,7 @@ _loadScene( )
 {
   // Load VTK model
   vtkNew< vtkPolyDataReader > reader;
-  reader->SetFileName( this->m_ModelFileName );
+  reader->SetFileName( this->m_ModelFileName.c_str( ) );
 
   vtkNew< vtkTriangleFilter > triangles;
   triangles->SetInputConnection( reader->GetOutputPort( ) );
@@ -161,6 +162,52 @@ _loadScene( )
     normals->Update( );
     this->_meshWithFaceNormals( normals->GetOutput( ) );
   } // end if
+
+  // Camera
+  double bounds[ 6 ];
+  normals->GetOutput( )->GetBounds( bounds );
+
+  std::cout
+    << bounds[ 0 ] << " "
+    << bounds[ 1 ] << " "
+    << bounds[ 2 ] << " "
+    << bounds[ 3 ] << " "
+    << bounds[ 4 ] << " "
+    << bounds[ 5 ] << std::endl;
+  std::exit( 1 );
+
+  Ogre::Camera* cam = this->m_SceneMgr->createCamera( "Camera" );
+  cam->setNearClipDistance( 1e-3 );
+  cam->setFarClipDistance( 1e+3 );
+  cam->setAutoAspectRatio( true );
+  this->getRenderWindow( )->addViewport( cam );
+
+  Ogre::SceneNode* node =
+    this->m_SceneMgr->getRootSceneNode( )->createChildSceneNode( );
+  node->attachObject( cam );
+
+  this->m_CamMan = new OgreBites::CameraMan( node );
+  this->addInputListener( this->m_CamMan );
+
+  node->setPosition( bounds[ 0 ], bounds[ 2 ], bounds[ 4 ] );
+  node->lookAt(
+    Ogre::Vector3(
+      bounds[ 1 ], bounds[ 3 ], bounds[ 5 ]
+      ),
+    Ogre::Node::TS_PARENT
+    );
+
+  // Lights
+  Ogre::Light* light = this->m_SceneMgr->createLight( "MainLight" );
+  node =
+    this->m_SceneMgr->getRootSceneNode( )->createChildSceneNode( );
+  node->setPosition(
+    ( bounds[ 0 ] + bounds[ 1 ] ) * 0.5,
+    bounds[ 3 ] * 2.5,
+    ( bounds[ 4 ] + bounds[ 5 ] ) * 0.5
+    );
+  node->attachObject( light );
+
 }
 
 // -------------------------------------------------------------------------
@@ -173,6 +220,50 @@ _meshWithPointNormals( vtkPolyData* pdata )
 void Application::
 _meshWithFaceNormals( vtkPolyData* pdata )
 {
+  Ogre::ManualObject* man = this->m_SceneMgr->createManualObject( "man_obj" );
+  man->begin( this->m_MaterialName, Ogre::RenderOperation::OT_TRIANGLE_LIST );
+
+  vtkPoints* points = pdata->GetPoints( );
+  vtkCellArray* polys = pdata->GetPolys( );
+  vtkDataArray* normals = pdata->GetCellData( )->GetNormals( );
+
+  unsigned long long j = 0;
+  vtkNew< vtkIdList > cell_points;
+  for( unsigned long long i = 0; i < polys->GetNumberOfCells( ); ++i, j += 3 )
+  {
+    cell_points->Initialize( );
+    polys->GetCellAtId( i, cell_points );
+    double* n = normals->GetTuple( i );
+    double* a = points->GetPoint( cell_points->GetId( 0 ) );
+    double* b = points->GetPoint( cell_points->GetId( 1 ) );
+    double* c = points->GetPoint( cell_points->GetId( 2 ) );
+
+    man->position( a[ 0 ], a[ 1 ], a[ 2 ] );
+    man->normal( n[ 0 ], n[ 1 ], n[ 2 ] );
+    man->textureCoord( 0, 0 );
+
+    man->position( b[ 0 ], b[ 1 ], b[ 2 ] );
+    man->normal( n[ 0 ], n[ 1 ], n[ 2 ] );
+    man->textureCoord( 0, 0 );
+
+    man->position( c[ 0 ], c[ 1 ], c[ 2 ] );
+    man->normal( n[ 0 ], n[ 1 ], n[ 2 ] );
+    man->textureCoord( 0, 0 );
+
+    man->triangle( j, j + 1, j + 2 );
+  } // end for
+  man->end( );
+
+  this->m_SceneMgr->getRootSceneNode( )->
+    createChildSceneNode( )->attachObject( man );
+
+  /* TODO
+     Ogre::MeshSerializer serializer;
+     serializer.exportMesh(
+     man->convertToMesh( output_name ),
+     output_name + std::string( ".mesh" )
+     );
+  */
 }
 
 // eof - $RCSfile$

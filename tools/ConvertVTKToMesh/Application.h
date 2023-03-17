@@ -48,6 +48,7 @@ protected:
 protected:
   std::string m_ResourcesFile;
   std::string m_ModelFileName;
+  std::string m_MaterialName;
   bool m_PointNormals;
 
   Ogre::SceneManager*   m_SceneMgr;

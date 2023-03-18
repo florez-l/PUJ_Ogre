@@ -5,10 +5,10 @@
 #define __Application__h__
 
 #include <OgreApplicationContext.h>
+#include <vtkSmartPointer.h>
 
 // -- Some forward declarations
 class vtkPolyData;
-namespace Ogre      { class Entity; }
 namespace OgreBites { class CameraMan; }
 
 /**
@@ -23,38 +23,36 @@ public:
 
 public:
   Application(
-    const std::string& exec_path, const std::string& model_fname,
-    bool point_normals
+    const std::string& exec_fname,
+    const std::string& input_fname,
+    const std::string& output_name,
+    bool normals_from_points
     );
-  virtual ~Application( ) override = default;
+  virtual ~Application( ) override;
 
-  // Configuration
-  virtual void loadResources( ) override;
-  virtual void setup( ) override;
-
-  // Iterative methods
-  virtual bool keyPressed( const OgreBites::KeyboardEvent& evt ) override;
-
-  // Main method
   virtual void go( );
 
-protected:
-  virtual void _initSceneManager( );
-  virtual void _loadScene( );
-
-  void _meshWithPointNormals( vtkPolyData* pdata );
-  void _meshWithFaceNormals( vtkPolyData* pdata );
+  virtual void setup( ) override;
+  virtual bool keyPressed( const OgreBites::KeyboardEvent& evt ) override;
 
 protected:
+
+  template< class _R >
+  void _readInput( const std::string& input_fname );
+
+  void _loadMesh( Ogre::SceneManager* mgr );
+
+protected:
+  std::string m_OutputMeshName;
   std::string m_ResourcesFile;
-  std::string m_ModelFileName;
   std::string m_MaterialName;
-  bool m_PointNormals;
+  bool m_NormalsFromPoints;
 
-  Ogre::SceneManager*   m_SceneMgr;
+  vtkSmartPointer< vtkPolyData > m_PolyData;
+
   OgreBites::CameraMan* m_CamMan;
 };
 
 #endif // __Application__h__
 
-// eof - $RCSfile$
+  // eof - $RCSfile$

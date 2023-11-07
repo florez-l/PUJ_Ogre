@@ -32,6 +32,7 @@ public:
 
   virtual void go( );
 
+  virtual void loadResources( ) override;
   virtual void setup( ) override;
   virtual bool keyPressed( const OgreBites::KeyboardEvent& evt ) override;
 

@@ -18,7 +18,6 @@
 #include <vtkPolyDataReader.h>
 #include <vtkSTLReader.h>
 
-
 #include <vtkNew.h>
 
 /* TODO
@@ -60,6 +59,9 @@ Application(
     << "FileSystem=" << m.parent_path( ).string( )
     << std::endl;
   r.close( );
+
+  std::cout << this->m_ResourcesFile << std::endl;
+  std::exit( 1 );
 
   // Materials file
   this->m_MaterialName = m.stem( ).string( );
@@ -120,6 +122,30 @@ go( )
   this->initApp( );
   this->getRoot( )->startRendering( );
   this->closeApp( );
+}
+
+// -------------------------------------------------------------------------
+void Application::
+loadResources( )
+{
+  this->enableShaderCache( );
+  Ogre::ConfigFile cf = Ogre::ConfigFile( );
+  cf.loadDirect( this->m_ResourcesFile );
+
+  auto res_mgr = Ogre::ResourceGroupManager::getSingletonPtr( );
+  auto settings = cf.getSettingsBySection( );
+  for( auto sIt = settings.begin( ); sIt != settings.end( ); ++sIt )
+    for( auto fIt = sIt->second.begin( ); fIt != sIt->second.end( ); ++fIt )
+      res_mgr->addResourceLocation( fIt->second, fIt->first, sIt->first );
+  try
+  {
+    res_mgr->initialiseAllResourceGroups( );
+    res_mgr->loadResourceGroup( "General" );
+  }
+  catch( ... )
+  {
+    // Do nothing
+  }
 }
 
 // -------------------------------------------------------------------------

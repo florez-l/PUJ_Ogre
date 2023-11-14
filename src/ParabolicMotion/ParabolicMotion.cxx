@@ -242,7 +242,7 @@ _loadScene( )
 
   btRigidBody* floor_body = new btRigidBody( floor_info );
   floor_body->setRestitution( 0.5 );
-  floor_body->setFriction( 0.5 );
+  floor_body->setFriction( 0.05 );
   this->m_BTWorld->addRigidBody( floor_body );
 
   // Physical sphere
@@ -274,7 +274,7 @@ _loadScene( )
     );
   this->m_SphereBody = new btRigidBody( sphere_info );
   this->m_SphereBody->setRestitution( 0.9 );
-  this->m_SphereBody->setFriction( 0.8 );
+  this->m_SphereBody->setFriction( 0.08 );
   this->m_BTWorld->addRigidBody( this->m_SphereBody );
 }
 

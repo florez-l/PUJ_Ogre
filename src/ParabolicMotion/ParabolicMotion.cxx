@@ -30,7 +30,8 @@ protected:
   virtual void _loadScene( ) override;
 
 protected:
-  Ogre::SceneNode* m_Sphere { nullptr };
+  Ogre::SceneNode* m_Sphere     { nullptr };
+  btRigidBody*     m_SphereBody { nullptr };
 
   bool m_Simulating { false };
 
@@ -108,7 +109,26 @@ bool ParabolicMotion::
 keyPressed( const OgreBites::KeyboardEvent& evt )
 {
   if( evt.keysym.sym == 'f' )
+  {
+    this->m_SphereBody->getWorldTransform( ).setOrigin(
+      btVector3(
+        this->m_Sphere->getPosition( )[ 0 ],
+        this->m_Sphere->getPosition( )[ 1 ],
+        this->m_Sphere->getPosition( )[ 2 ]
+        )
+      );
+
+    auto cam = this->m_CamMan->getCamera( );
+    this->m_SphereBody->setLinearVelocity(
+      btVector3(
+        -10 * cam->getLocalAxes( ).GetColumn( 2 )[ 0 ],
+        -10 * cam->getLocalAxes( ).GetColumn( 2 )[ 1 ],
+        -10 * cam->getLocalAxes( ).GetColumn( 2 )[ 2 ]
+        )
+      );
+
     this->m_Simulating = true;
+  } // end if
   return( this->PUJ_Ogre::BaseApplication::keyPressed( evt ) );
 }
 
@@ -119,17 +139,17 @@ frameStarted( const Ogre::FrameEvent& evt )
   if( this->m_Simulating )
   {
     this->m_BTWorld->stepSimulation( evt.timeSinceLastEvent, 10 );
-    for( int j = this->m_BTWorld->getNumCollisionObjects( ) - 1; j >= 0; j-- )
-    {
-      btCollisionObject* obj = this->m_BTWorld->getCollisionObjectArray( )[ j ];
-      btRigidBody* body = btRigidBody::upcast( obj );
-      btTransform trans;
-      if( body && body->getMotionState( ) )
-        body->getMotionState( )->getWorldTransform( trans );
-      else
-        trans = obj->getWorldTransform( );
-      printf("world pos object %d = %f,%f,%f\n", j, float(trans.getOrigin().getX()), float(trans.getOrigin().getY()), float(trans.getOrigin().getZ()));
-    } // end for
+
+    btTransform trans;
+    if( this->m_SphereBody && this->m_SphereBody->getMotionState( ) )
+      this->m_SphereBody->getMotionState( )->getWorldTransform( trans );
+    else
+      trans = this->m_SphereBody->getWorldTransform( );
+    this->m_Sphere->setPosition(
+      trans.getOrigin( ).getX( ),
+      trans.getOrigin( ).getY( ),
+      trans.getOrigin( ).getZ( )
+      );
   }
   else
   {
@@ -221,6 +241,8 @@ _loadScene( )
     );
 
   btRigidBody* floor_body = new btRigidBody( floor_info );
+  floor_body->setRestitution( 0.5 );
+  floor_body->setFriction( 0.5 );
   this->m_BTWorld->addRigidBody( floor_body );
 
   // Physical sphere
@@ -250,8 +272,10 @@ _loadScene( )
   btRigidBody::btRigidBodyConstructionInfo sphere_info(
     sphere_mass, sphere_state, sphere_shape, sphere_inertia
     );
-  btRigidBody* sphere_body = new btRigidBody( sphere_info );
-  this->m_BTWorld->addRigidBody( sphere_body );
+  this->m_SphereBody = new btRigidBody( sphere_info );
+  this->m_SphereBody->setRestitution( 0.9 );
+  this->m_SphereBody->setFriction( 0.8 );
+  this->m_BTWorld->addRigidBody( this->m_SphereBody );
 }
 
 // eof - $RCSfile$

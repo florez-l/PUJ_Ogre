@@ -33,6 +33,9 @@ protected:
   Ogre::SceneNode* m_Sphere     { nullptr };
   btRigidBody*     m_SphereBody { nullptr };
 
+  Ogre::SceneNode* m_Cube1     { nullptr };
+  btRigidBody*     m_Cube1Body { nullptr };
+
   bool m_Simulating { false };
 
   btDefaultCollisionConfiguration* m_BTConf;
@@ -150,6 +153,18 @@ frameStarted( const Ogre::FrameEvent& evt )
       trans.getOrigin( ).getY( ),
       trans.getOrigin( ).getZ( )
       );
+
+    if( this->m_Cube1Body && this->m_Cube1Body->getMotionState( ) )
+      this->m_Cube1Body->getMotionState( )->getWorldTransform( trans );
+    else
+      trans = this->m_Cube1Body->getWorldTransform( );
+    btQuaternion rot = trans.getRotation( );
+    this->m_Cube1->setOrientation( Ogre::Quaternion( rot.getW( ), rot.getX( ), rot.getY( ), rot.getZ( ) ) );
+    this->m_Cube1->setPosition(
+      trans.getOrigin( ).getX( ),
+      trans.getOrigin( ).getY( ),
+      trans.getOrigin( ).getZ( )
+      );
   }
   else
   {
@@ -214,6 +229,15 @@ _loadScene( )
     );
   this->m_Sphere->attachObject( sphere_ent );
 
+  // Load some cubes
+  auto cube1 =
+    this->_load_using_vtk( "ParabolicMotion_resources/cube.vtp", "cube1" );
+  auto cube_mesh = cube1->convertToMesh( "cube", "General" );
+  auto cube_ent = this->m_SceneMgr->createEntity( "cube" );
+  this->m_Cube1 = root_node->createChildSceneNode( );
+  this->m_Cube1->setPosition( 0, 0.5, 0 );
+  this->m_Cube1->attachObject( cube_ent );
+
   // Create "physical" world
   this->m_BTConf = new btDefaultCollisionConfiguration( );
   this->m_BTDispatcher = new btCollisionDispatcher( this->m_BTConf );
@@ -242,7 +266,7 @@ _loadScene( )
 
   btRigidBody* floor_body = new btRigidBody( floor_info );
   floor_body->setRestitution( 0.5 );
-  floor_body->setFriction( 0.05 );
+  floor_body->setFriction( 0.7 );
   this->m_BTWorld->addRigidBody( floor_body );
 
   // Physical sphere
@@ -276,6 +300,44 @@ _loadScene( )
   this->m_SphereBody->setRestitution( 0.9 );
   this->m_SphereBody->setFriction( 0.08 );
   this->m_BTWorld->addRigidBody( this->m_SphereBody );
+
+  // Physical cube1
+  Ogre::Vector3 cube1_size = cube_ent->getBoundingBox( ).getHalfSize( );
+
+  btCollisionShape* cube1_shape = new btBoxShape(
+    btVector3(
+      cube1_size[ 0 ],
+      cube1_size[ 1 ],
+      cube1_size[ 2 ]
+      )
+    );
+  this->m_BTShapes.push_back( cube1_shape );
+
+  btTransform cube1_transform;
+  cube1_transform.setIdentity( );
+
+  btScalar cube1_mass( 1 );
+
+  btVector3 cube1_inertia( 0, 0, 0 );
+  cube1_shape->calculateLocalInertia( cube1_mass, cube1_inertia );
+
+  cube1_transform.setOrigin(
+    btVector3(
+      this->m_Cube1->getPosition( )[ 0 ],
+      this->m_Cube1->getPosition( )[ 1 ],
+      this->m_Cube1->getPosition( )[ 2 ]
+      )
+    );
+
+  btDefaultMotionState* cube1_state =
+    new btDefaultMotionState( cube1_transform );
+  btRigidBody::btRigidBodyConstructionInfo cube1_info(
+    cube1_mass, cube1_state, cube1_shape, cube1_inertia
+    );
+  this->m_Cube1Body = new btRigidBody( cube1_info );
+  this->m_Cube1Body->setRestitution( 0.9 );
+  this->m_Cube1Body->setFriction( 0.8 );
+  this->m_BTWorld->addRigidBody( this->m_Cube1Body );
 }
 
 // eof - $RCSfile$

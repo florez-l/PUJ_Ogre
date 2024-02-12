@@ -31,9 +31,10 @@ namespace PUJ_Ogre
     virtual ~OBJReader( ) = default;
 
     const std::string& filename( ) const;
-    void set_filename( const std::string& fname );
+    bool read( const std::string& fname, bool phong_shading = true );
 
-    bool read( );
+  protected:
+    virtual void _build_buffer( bool phong_shading );
 
   protected:
     std::string m_FileName { "" };

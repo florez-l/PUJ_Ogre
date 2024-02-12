@@ -11,6 +11,12 @@
 
 #include <boost/tokenizer.hpp>
 
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Polygon_mesh_processing/compute_normal.h>
+#include <CGAL/Surface_mesh.h>
+
+#include <OgreResourceGroupManager.h>
+
 // -------------------------------------------------------------------------
 template< class _TReal, class _TNatural >
 PUJ_Ogre::OBJReader< _TReal, _TNatural >::
@@ -28,39 +34,22 @@ filename( ) const
 
 // -------------------------------------------------------------------------
 template< class _TReal, class _TNatural >
-void PUJ_Ogre::OBJReader< _TReal, _TNatural >::
-set_filename( const std::string& fname )
-{
-  this->m_FileName = fname;
-}
-
-// -------------------------------------------------------------------------
-template< class _TReal, class _TNatural >
 bool PUJ_Ogre::OBJReader< _TReal, _TNatural >::
-read( )
+read( const std::string& fname, bool phong_shading )
 {
   using TTokSep = boost::char_separator< char >;
   using TTok = boost::tokenizer< TTokSep >;
 
+  this->m_FileName = fname;
   this->m_Points.clear( );
   this->m_Normals.clear( );
   this->m_Textures.clear( );
   this->m_Objects.clear( );
 
   // Open input stream: load all file into a memory buffer
-  std::ifstream ifs( this->m_FileName.c_str( ) );
-  if( !ifs )
-  {
-    ifs.close( );
-    return( false );
-  } // end if
-  ifs.seekg( 0, std::ios::end );
-  std::size_t size = ifs.tellg( );
-  ifs.seekg( 0, std::ios::beg );
-  std::string buffer( size, 0 );
-  ifs.read( &buffer[ 0 ], size );
-  ifs.close( );
-  std::istringstream input( buffer );
+  auto c = Ogre::ResourceGroupManager::getSingleton( )
+    .openResource( this->m_FileName );
+  std::istringstream input( c->getAsString( ) );
 
   // Read stream
   std::string current_object = this->m_FileName;
@@ -70,7 +59,7 @@ read( )
   while( std::getline( input, line ) )
   {
     // Tokenize line
-    TTok toks { line, TTokSep{ " " } };
+    TTok toks { line, TTokSep{ " \n\r\t" } };
     auto t = toks.begin( );
     std::string cmd = *( t++ );
 
@@ -136,7 +125,7 @@ read( )
         if( *t != "" )
         {
           auto c = std::count( t->begin( ), t->end( ), '/' );
-          TTok face { *t, TTokSep{ "/" } };
+          TTok face { *t, TTokSep{ "/ \n\r\t" } };
           auto f = face.begin( );
           auto d = std::distance( f, face.end( ) );
 
@@ -156,7 +145,99 @@ read( )
       } // end for
     } // end if
   } // end while
+
+  this->_build_buffer( phong_shading );
+
   return( true );
+}
+
+// -------------------------------------------------------------------------
+template< class _TReal, class _TNatural >
+void PUJ_Ogre::OBJReader< _TReal, _TNatural >::
+_build_buffer( bool phong_shading )
+{
+  using _TK = CGAL::Exact_predicates_inexact_constructions_kernel;
+  using _TP = _TK::Point_3;
+  using _TM = CGAL::Surface_mesh< _TP >;
+  using _TV = _TM::Vertex_index;
+  using _TF = _TM::Face_index;
+
+  /* TODO
+     typedef CGAL::Simple_cartesian<double> K;
+     typedef CGAL::Surface_mesh<K::Point_3> Mesh;
+     typedef Mesh::Vertex_index vertex_descriptor;
+     typedef Mesh::Face_index face_descriptor;
+  */
+
+  std::vector< _TP > points;
+  for( unsigned long long i = 0; i < this->m_Points.size( ); i += 4 )
+  {
+    points.push_back(
+      _TP(
+        this->m_Points[ i ],
+        this->m_Points[ i + 1 ],
+        this->m_Points[ i + 2 ]
+        )
+      );
+  } // end for
+  points.shrink_to_fit( );
+
+  // Create meshes
+  std::vector< _TV > verts( points.size( ) ), face_range;
+  for( const auto& o: this->m_Objects )
+  {
+    for( const auto& g: o.second )
+    {
+      _TM mesh;
+      std::fill( verts.begin( ), verts.end( ), _TV( ) );
+      for( const auto& f: g.second )
+      {
+        face_range.clear( );
+        for( const auto& i: f )
+        {
+          auto idx = i[ 0 ] - 1;
+          if( verts[ idx ] == _TV( ) )
+            verts[ idx ] = mesh.add_vertex( points[ idx ] );
+          face_range.push_back( verts[ idx ] );
+        } // end for
+        mesh.add_face( face_range );
+
+        if( phong_shading )
+        {
+
+          boost::graph_traits< _TM >::vertex_descriptor;
+            
+          /* TODO
+             CGAL::Polygon_mesh_processing::compute_vertex_normals( mesh, normals );
+          */
+
+            /* TODO
+               void CGAL::Polygon_mesh_processing::compute_vertex_normals       (       const PolygonMesh &     pmesh,
+               VertexNormalMap  vertex_normals,
+               const NamedParameters &  np = parameters::default_values() 
+               )        
+            */
+
+            /* TODO
+               using TIndex   = std::array< TNatural, 3 >;
+               using TFace    = std::vector< TIndex >;
+               using TTopo    = std::vector< TFace >;
+               using TGroups  = std::map< std::string, TTopo >;
+               using TObjects = std::map< std::string, TGroups >;
+            */
+            }
+        else
+        {
+          /* TODO
+             void CGAL::Polygon_mesh_processing::compute_face_normals (       const PolygonMesh &     pmesh,
+             Face_normal_map  face_normals,
+             const NamedParameters &  np = parameters::default_values() 
+             )        
+          */
+        } // end if
+      } // end for
+    } // end for
+  } // end for
 }
 
 #endif // __PUJ_Ogre__OBJReader__hxx__

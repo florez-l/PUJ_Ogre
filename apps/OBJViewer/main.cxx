@@ -13,6 +13,8 @@
 #include <OgreApplicationContext.h>
 #include <OgreCameraMan.h>
 
+#include <PUJ_Ogre/OBJReader.h>
+
 /**
  */
 class Application
@@ -25,6 +27,7 @@ public:
 
 public:
   Application(
+    const std::string& fname,
     const std::string& app_name,
     const std::string& resources = "resources.cfg"
     )
@@ -34,10 +37,14 @@ public:
       this->m_Resources =
         std::filesystem::canonical( std::filesystem::path( resources ) )
         .string( );
+      this->m_FileName = fname;
     }
   virtual ~Application( ) override = default;
 
   // Configuration
+  virtual void locateResources( ) override
+    {
+    }
   virtual void loadResources( ) override
     {
       this->enableShaderCache( );
@@ -116,12 +123,33 @@ protected:
     }
   virtual void _loadScene( )
     {
+      auto* root = this->getRoot( );
+      auto* root_node = this->m_SceneMgr->getRootSceneNode( );
+
+      // Load mesh
+      this->_loadMeshFromUnconventionalFile( this->m_FileName );
+
+      // Configure camera
+      auto cam = this->m_SceneMgr->createCamera( "MainCamera" );
+      cam->setNearClipDistance( 0.005 );
+      cam->setAutoAspectRatio( true );
+      auto camnode = root_node->createChildSceneNode( );
+      // TODO: camnode->setPosition( cog );
+      camnode->attachObject( cam );
+    }
+
+  virtual void _loadMeshFromUnconventionalFile( const std::string& fname )
+    {
+      PUJ_Ogre::OBJReader reader;
+      reader.read( fname );
     }
 
 protected:
   std::string           m_Resources;
   Ogre::SceneManager*   m_SceneMgr;
   OgreBites::CameraMan* m_CamMan;
+
+  std::string m_FileName { "" };
 };
 
 
@@ -154,7 +182,7 @@ int main( int argc, char** argv )
   write( fd, data.str( ).c_str( ), data.str( ).size( ) );
 
   // Execute application
-  Application app( "OBJViewer", filename );
+  Application app( argv[ 1 ], "OBJViewer", filename );
   app.go( );
 
   // Close application

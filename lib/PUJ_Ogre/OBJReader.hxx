@@ -59,7 +59,7 @@ read( const std::string& fname, bool phong_shading )
   while( std::getline( input, line ) )
   {
     // Tokenize line
-    TTok toks { line, TTokSep{ " \n\r\t" } };
+    TTok toks { line, TTokSep{ " \t\n" } };
     auto t = toks.begin( );
     std::string cmd = *( t++ );
 
@@ -125,7 +125,7 @@ read( const std::string& fname, bool phong_shading )
         if( *t != "" )
         {
           auto c = std::count( t->begin( ), t->end( ), '/' );
-          TTok face { *t, TTokSep{ "/ \n\r\t" } };
+          TTok face { *t, TTokSep{ "/ \t\n" } };
           auto f = face.begin( );
           auto d = std::distance( f, face.end( ) );
 
@@ -158,9 +158,12 @@ _build_buffer( bool phong_shading )
 {
   using _TK = CGAL::Exact_predicates_inexact_constructions_kernel;
   using _TP = _TK::Point_3;
+  using _TV = _TK::Vector_3;
   using _TM = CGAL::Surface_mesh< _TP >;
-  using _TV = _TM::Vertex_index;
+  using _TI = _TM::Vertex_index;
   using _TF = _TM::Face_index;
+  // TODO using _TPM = boost::property_map< _TM, CGAL::vertex_point_t >::type;
+  using _TNM = _TM::template Property_map< _TI, _TV >;
 
   /* TODO
      typedef CGAL::Simple_cartesian<double> K;
@@ -183,59 +186,71 @@ _build_buffer( bool phong_shading )
   points.shrink_to_fit( );
 
   // Create meshes
-  std::vector< _TV > verts( points.size( ) ), face_range;
+  std::vector< _TI > verts( points.size( ) ), face_range;
   for( const auto& o: this->m_Objects )
   {
     for( const auto& g: o.second )
     {
       _TM mesh;
-      std::fill( verts.begin( ), verts.end( ), _TV( ) );
+      std::fill( verts.begin( ), verts.end( ), _TI( ) );
       for( const auto& f: g.second )
       {
         face_range.clear( );
         for( const auto& i: f )
         {
           auto idx = i[ 0 ] - 1;
-          if( verts[ idx ] == _TV( ) )
+          if( verts[ idx ] == _TI( ) )
             verts[ idx ] = mesh.add_vertex( points[ idx ] );
           face_range.push_back( verts[ idx ] );
         } // end for
         mesh.add_face( face_range );
-
-        if( phong_shading )
-        {
-
-          boost::graph_traits< _TM >::vertex_descriptor;
-            
-          /* TODO
-             CGAL::Polygon_mesh_processing::compute_vertex_normals( mesh, normals );
-          */
-
-            /* TODO
-               void CGAL::Polygon_mesh_processing::compute_vertex_normals       (       const PolygonMesh &     pmesh,
-               VertexNormalMap  vertex_normals,
-               const NamedParameters &  np = parameters::default_values() 
-               )        
-            */
-
-            /* TODO
-               using TIndex   = std::array< TNatural, 3 >;
-               using TFace    = std::vector< TIndex >;
-               using TTopo    = std::vector< TFace >;
-               using TGroups  = std::map< std::string, TTopo >;
-               using TObjects = std::map< std::string, TGroups >;
-            */
-            }
-        else
-        {
-          /* TODO
-             void CGAL::Polygon_mesh_processing::compute_face_normals (       const PolygonMesh &     pmesh,
-             Face_normal_map  face_normals,
-             const NamedParameters &  np = parameters::default_values() 
-             )        
-          */
-        } // end if
       } // end for
+
+      if( phong_shading )
+      {
+        _TNM normals = mesh.template add_property_map< _TI, _TV >(
+          "v:normals", CGAL::NULL_VECTOR
+          ).first;
+        CGAL::Polygon_mesh_processing
+          ::compute_vertex_normals( mesh, normals );
+
+        /* TODO
+           unsigned long long leo = 0;
+           for( const auto& n: normals )
+           leo++;
+           std::cout << leo << " " << mesh.number_of_vertices( ) << std::endl;
+        */
+
+        // boost::graph_traits< _TM >::vertex_descriptor;
+            
+        /* TODO
+           CGAL::Polygon_mesh_processing::compute_vertex_normals( mesh, normals );
+        */
+
+        /* TODO
+           void CGAL::Polygon_mesh_processing::compute_vertex_normals       (       const PolygonMesh &     pmesh,
+           VertexNormalMap  vertex_normals,
+           const NamedParameters &  np = parameters::default_values() 
+           )        
+        */
+
+        /* TODO
+           using TIndex   = std::array< TNatural, 3 >;
+           using TFace    = std::vector< TIndex >;
+           using TTopo    = std::vector< TFace >;
+           using TGroups  = std::map< std::string, TTopo >;
+           using TObjects = std::map< std::string, TGroups >;
+        */
+      }
+      else
+      {
+        /* TODO
+           void CGAL::Polygon_mesh_processing::compute_face_normals (       const PolygonMesh &     pmesh,
+           Face_normal_map  face_normals,
+           const NamedParameters &  np = parameters::default_values() 
+           )        
+        */
+      } // end if
     } // end for
   } // end for
 }

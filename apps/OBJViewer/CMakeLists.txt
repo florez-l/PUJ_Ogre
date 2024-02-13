@@ -5,7 +5,8 @@
 add_executable(PUJ_Ogre_OBJViewer main.cxx)
 target_link_libraries(
   PUJ_Ogre_OBJViewer
-  stdc++fs OgreMain OgreBites
+  stdc++fs gmp
+  OgreMain OgreBites
   )
 
 ## eof - CMakeLists.txt

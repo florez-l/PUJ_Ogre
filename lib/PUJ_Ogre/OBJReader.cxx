@@ -1,12 +1,10 @@
 // =========================================================================
 // @author Leonardo Florez-Valencia (florez-l@javeriana.edu.co)
 // =========================================================================
-#ifndef __PUJ_Ogre__OBJReader__hxx__
-#define __PUJ_Ogre__OBJReader__hxx__
 
-#include <algorithm>
-#include <fstream>
-#include <iterator>
+#include <PUJ_Ogre/OBJReader.h>
+
+#include <istream>
 #include <sstream>
 
 #include <boost/tokenizer.hpp>
@@ -14,8 +12,6 @@
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <CGAL/Surface_mesh.h>
-
-#include <OgreResourceGroupManager.h>
 
 // -------------------------------------------------------------------------
 template< class _TReal, class _TNatural >
@@ -34,22 +30,40 @@ filename( ) const
 
 // -------------------------------------------------------------------------
 template< class _TReal, class _TNatural >
+const typename PUJ_Ogre::OBJReader< _TReal, _TNatural >::
+TBuffer& PUJ_Ogre::OBJReader< _TReal, _TNatural >::
+buffer( ) const
+{
+  return( this->m_Buffer );
+}
+
+// -------------------------------------------------------------------------
+template< class _TReal, class _TNatural >
 bool PUJ_Ogre::OBJReader< _TReal, _TNatural >::
 read( const std::string& fname, bool phong_shading )
+{
+  this->m_FileName = fname;
+
+  // Open input stream: load all file into a memory buffer
+  /* TODO
+   */
+  // return( this->read( input, phong_shading ) );
+  return( true );
+}
+
+// -------------------------------------------------------------------------
+template< class _TReal, class _TNatural >
+bool PUJ_Ogre::OBJReader< _TReal, _TNatural >::
+read( std::istream& input, bool phong_shading )
 {
   using TTokSep = boost::char_separator< char >;
   using TTok = boost::tokenizer< TTokSep >;
 
-  this->m_FileName = fname;
+  this->m_FileName = "..no_filename..";
   this->m_Points.clear( );
   this->m_Normals.clear( );
   this->m_Textures.clear( );
   this->m_Objects.clear( );
-
-  // Open input stream: load all file into a memory buffer
-  auto c = Ogre::ResourceGroupManager::getSingleton( )
-    .openResource( this->m_FileName );
-  std::istringstream input( c->getAsString( ) );
 
   // Read stream
   std::string current_object = this->m_FileName;
@@ -122,7 +136,7 @@ read( const std::string& fname, bool phong_shading )
       o->second.push_back( TFace( ) );
       for( ; t != toks.end( ); ++t )
       {
-        if( *t != "" )
+        if( *t != "" && *t != "\r" )
         {
           auto c = std::count( t->begin( ), t->end( ), '/' );
           TTok face { *t, TTokSep{ "/ \t\n" } };
@@ -162,15 +176,9 @@ _build_buffer( bool phong_shading )
   using _TM = CGAL::Surface_mesh< _TP >;
   using _TI = _TM::Vertex_index;
   using _TF = _TM::Face_index;
-  // TODO using _TPM = boost::property_map< _TM, CGAL::vertex_point_t >::type;
   using _TNM = _TM::template Property_map< _TI, _TV >;
 
-  /* TODO
-     typedef CGAL::Simple_cartesian<double> K;
-     typedef CGAL::Surface_mesh<K::Point_3> Mesh;
-     typedef Mesh::Vertex_index vertex_descriptor;
-     typedef Mesh::Face_index face_descriptor;
-  */
+  this->m_Buffer.clear( );
 
   std::vector< _TP > points;
   for( unsigned long long i = 0; i < this->m_Points.size( ); i += 4 )
@@ -189,8 +197,21 @@ _build_buffer( bool phong_shading )
   std::vector< _TI > verts( points.size( ) ), face_range;
   for( const auto& o: this->m_Objects )
   {
+    auto ob = this->m_Buffer.insert(
+      std::make_pair(
+        o.first,
+        std::map< std::string, std::tuple< TGeom, TIndices, TIndices > >( )
+        )
+      ).first;
     for( const auto& g: o.second )
     {
+      auto og = ob->second.insert(
+        std::make_pair(
+          g.first,
+          std::make_tuple( TGeom( ), TIndices( ), TIndices( ) )
+          )
+        ).first;
+
       _TM mesh;
       std::fill( verts.begin( ), verts.end( ), _TI( ) );
       for( const auto& f: g.second )
@@ -214,47 +235,76 @@ _build_buffer( bool phong_shading )
         CGAL::Polygon_mesh_processing
           ::compute_vertex_normals( mesh, normals );
 
-        /* TODO
-           unsigned long long leo = 0;
-           for( const auto& n: normals )
-           leo++;
-           std::cout << leo << " " << mesh.number_of_vertices( ) << std::endl;
-        */
+        auto& points = mesh.points( );
+        auto p = points.begin( );
+        auto n = normals.begin( );
+        for( ; p != points.end( ); ++p, ++n )
+        {
+          std::get< 0 >( og->second ).push_back( TReal( ( *p )[ 0 ] ) );
+          std::get< 0 >( og->second ).push_back( TReal( ( *p )[ 1 ] ) );
+          std::get< 0 >( og->second ).push_back( TReal( ( *p )[ 2 ] ) );
+          std::get< 0 >( og->second ).push_back( TReal( ( *n )[ 0 ] ) );
+          std::get< 0 >( og->second ).push_back( TReal( ( *n )[ 1 ] ) );
+          std::get< 0 >( og->second ).push_back( TReal( ( *n )[ 2 ] ) );
+          std::get< 0 >( og->second ).push_back( TReal( 0 ) );
+          std::get< 0 >( og->second ).push_back( TReal( 0 ) );
+        } // end for
 
-        // boost::graph_traits< _TM >::vertex_descriptor;
-            
-        /* TODO
-           CGAL::Polygon_mesh_processing::compute_vertex_normals( mesh, normals );
-        */
+        CGAL::Vertex_around_face_iterator< _TM > vb, ve;
+        auto faces = mesh.faces( );
+        for( const auto& f: mesh.faces( ) )
+        {
+          boost::tie( vb, ve ) =
+            CGAL::vertices_around_face( mesh.halfedge( f ), mesh );
+          unsigned int s = std::distance( vb, ve );
+          for( ; vb != ve; ++vb )
+          {
+            if( s == 3 )
+              std::get< 1 >( og->second ).push_back( TNatural( *vb ) );
+            else if( s == 4 )
+              std::get< 2 >( og->second ).push_back( TNatural( *vb ) );
+          } // end for
+        } // end for
 
-        /* TODO
-           void CGAL::Polygon_mesh_processing::compute_vertex_normals       (       const PolygonMesh &     pmesh,
-           VertexNormalMap  vertex_normals,
-           const NamedParameters &  np = parameters::default_values() 
-           )        
-        */
-
-        /* TODO
-           using TIndex   = std::array< TNatural, 3 >;
-           using TFace    = std::vector< TIndex >;
-           using TTopo    = std::vector< TFace >;
-           using TGroups  = std::map< std::string, TTopo >;
-           using TObjects = std::map< std::string, TGroups >;
-        */
+        std::get< 0 >( og->second ).shrink_to_fit( );
+        std::get< 1 >( og->second ).shrink_to_fit( );
+        std::get< 2 >( og->second ).shrink_to_fit( );
       }
       else
       {
         /* TODO
            void CGAL::Polygon_mesh_processing::compute_face_normals (       const PolygonMesh &     pmesh,
            Face_normal_map  face_normals,
-           const NamedParameters &  np = parameters::default_values() 
-           )        
+           const NamedParameters &  np = parameters::default_values()
+           )
         */
       } // end if
     } // end for
   } // end for
 }
 
-#endif // __PUJ_Ogre__OBJReader__hxx__
+// -------------------------------------------------------------------------
+#include <PUJ_Ogre/Export.h>
+
+namespace PUJ_Ogre
+{
+  template class PUJ_Ogre_EXPORT OBJReader< float, unsigned char >;
+  template class PUJ_Ogre_EXPORT OBJReader< float, unsigned short >;
+  template class PUJ_Ogre_EXPORT OBJReader< float, unsigned int >;
+  template class PUJ_Ogre_EXPORT OBJReader< float, unsigned long >;
+  template class PUJ_Ogre_EXPORT OBJReader< float, unsigned long long >;
+
+  template class PUJ_Ogre_EXPORT OBJReader< double, unsigned char >;
+  template class PUJ_Ogre_EXPORT OBJReader< double, unsigned short >;
+  template class PUJ_Ogre_EXPORT OBJReader< double, unsigned int >;
+  template class PUJ_Ogre_EXPORT OBJReader< double, unsigned long >;
+  template class PUJ_Ogre_EXPORT OBJReader< double, unsigned long long >;
+
+  template class PUJ_Ogre_EXPORT OBJReader< long double, unsigned char >;
+  template class PUJ_Ogre_EXPORT OBJReader< long double, unsigned short >;
+  template class PUJ_Ogre_EXPORT OBJReader< long double, unsigned int >;
+  template class PUJ_Ogre_EXPORT OBJReader< long double, unsigned long >;
+  template class PUJ_Ogre_EXPORT OBJReader< long double, unsigned long long >;
+} // end namespace
 
 // eof - $RCSfile$

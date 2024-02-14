@@ -6,6 +6,7 @@
 #include <cstring>
 #include <filesystem>
 #include <iostream>
+#include <sstream>
 #include <unistd.h>
 #include <PUJ_Ogre/OBJReader.h>
 
@@ -71,7 +72,6 @@ public:
     {
       this->_initSceneManager( );
       this->_loadScene( );
-      this->_configureCamera( );
       this->setWindowGrab( true );
     }
 
@@ -103,23 +103,34 @@ protected:
 
       auto* root = this->getRoot( );
       this->m_SceneMgr = root->createSceneManager( "DefaultSceneManager" );
-      this->m_SceneMgr->setAmbientLight( Ogre::ColourValue( 0.9, 0.9, 0.9 ) );
 
       // register our scene with the RTSS
       auto* shadergen = Ogre::RTShader::ShaderGenerator::getSingletonPtr( );
       shadergen->addSceneManager( this->m_SceneMgr );
     }
-  virtual void _configureCamera( )
+  virtual void _configureCamera( const Ogre::AxisAlignedBox& bbox )
     {
-      auto* cam = this->m_SceneMgr->getCameras( ).begin( )->second;
+      auto* root = this->getRoot( );
+      auto* root_node = this->m_SceneMgr->getRootSceneNode( );
+
+      // Configure camera
+      auto cam = this->m_SceneMgr->createCamera( "MainCamera" );
+      cam->setNearClipDistance( 0.005 );
+      cam->setAutoAspectRatio( true );
+      auto camnode = root_node->createChildSceneNode( );
+      camnode->setPosition( bbox.getMaximum( ) );
+      camnode->lookAt( bbox.getCenter( ), Ogre::Node::TS_WORLD );
+      camnode->attachObject( cam );
+
       cam->setAutoAspectRatio( true );
 
       this->m_CamMan = new OgreBites::CameraMan( cam->getParentSceneNode( ) );
-      this->m_CamMan->setStyle( OgreBites::CS_FREELOOK );
+      this->m_CamMan->setStyle( OgreBites::CS_ORBIT /*FREELOOK*/ );
       this->m_CamMan->setTopSpeed( 3 );
       this->m_CamMan->setFixedYaw( true );
       this->addInputListener( this->m_CamMan );
-      this->getRenderWindow( )->addViewport( cam );
+      auto vp = this->getRenderWindow( )->addViewport( cam );
+      vp->setBackgroundColour( Ogre::ColourValue( 0.9, 0.75, 0.5 ) );
     }
   virtual void _loadScene( )
     {
@@ -127,21 +138,109 @@ protected:
       auto* root_node = this->m_SceneMgr->getRootSceneNode( );
 
       // Load mesh
-      this->_loadMeshFromUnconventionalFile( this->m_FileName );
+      Ogre::AxisAlignedBox bbox;
+      this->_loadMeshFromUnconventionalFile( bbox, this->m_FileName );
+
+      // Configure lights
+      this->m_SceneMgr->setAmbientLight( Ogre::ColourValue( 1, 1, 1 ) );
+
+      auto corners = bbox.getAllCorners( );
+      for( unsigned int i = 0; i < 8; ++i )
+      {
+        std::stringstream n;
+        n << "light_" << i;
+        Ogre::Light* l = this->m_SceneMgr->createLight( n.str( ) );
+        l->setDiffuseColour( 1, 1, 1 );
+        l->setSpecularColour( 1, 1, 1 );
+        l->setType( Ogre::Light::LT_POINT );
+
+        Ogre::SceneNode* ln = root_node->createChildSceneNode( );
+        ln->attachObject( l );
+        ln->setPosition( corners[ i ] );
+      } // end for
 
       // Configure camera
-      auto cam = this->m_SceneMgr->createCamera( "MainCamera" );
-      cam->setNearClipDistance( 0.005 );
-      cam->setAutoAspectRatio( true );
-      auto camnode = root_node->createChildSceneNode( );
-      // TODO: camnode->setPosition( cog );
-      camnode->attachObject( cam );
+      this->_configureCamera( bbox );
     }
 
-  virtual void _loadMeshFromUnconventionalFile( const std::string& fname )
+  virtual std::vector< Ogre::ManualObject* > _loadMeshFromUnconventionalFile(
+    Ogre::AxisAlignedBox& bbox,
+    const std::string& fname
+    )
     {
       PUJ_Ogre::OBJReader reader;
-      reader.read( fname );
+      auto c = Ogre::ResourceGroupManager::getSingleton( )
+        .openResource( fname );
+      std::istringstream input( c->getAsString( ) );
+      reader.read( input, true );
+      const auto& buffer = reader.buffer( );
+
+      bbox = Ogre::AxisAlignedBox(
+        std::numeric_limits< Ogre::Real >::max( ),
+        std::numeric_limits< Ogre::Real >::max( ),
+        std::numeric_limits< Ogre::Real >::max( ),
+        std::numeric_limits< Ogre::Real >::lowest( ),
+        std::numeric_limits< Ogre::Real >::lowest( ),
+        std::numeric_limits< Ogre::Real >::lowest( )
+        );
+
+      std::vector< Ogre::ManualObject* > objects;
+      for( const auto& o: buffer )
+      {
+        for( const auto& g: o.second )
+        {
+          std::stringstream n;
+          n << o.first << "_" << g.first << std::endl;
+          const auto& geom = std::get< 0 >( g.second );
+          const auto& tria = std::get< 1 >( g.second );
+          const auto& quad = std::get< 2 >( g.second );
+
+          Ogre::ManualObject* man =
+            this->m_SceneMgr->createManualObject( n.str( ) );
+          man->begin(
+            "Template/Red", Ogre::RenderOperation::OT_TRIANGLE_LIST
+            );
+
+          for( unsigned long long i = 0; i < geom.size( ); i += 8 )
+          {
+            man->position( geom[ i ], geom[ i + 1 ], geom[ i + 2 ] );
+            man->normal( geom[ i + 3 ], geom[ i + 4 ], geom[ i + 5 ] );
+            man->textureCoord( geom[ i + 6 ], geom[ i + 7 ] );
+          } // end for
+
+          for( unsigned long long i = 0; i < tria.size( ); i += 3 )
+            man->triangle( tria[ i ], tria[ i + 1 ], tria[ i + 2 ] );
+
+          for( unsigned long long i = 0; i < quad.size( ); i += 4 )
+            man->quad(
+              quad[ i ], quad[ i + 1 ], quad[ i + 2 ], quad[ i + 3 ]
+              );
+
+          man->end( );
+
+          this->m_SceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(man);
+
+          objects.push_back( man );
+
+          Ogre::AxisAlignedBox bb = man->getBoundingBox( );
+          Ogre::Vector3 minV = bbox.getMinimum( );
+          Ogre::Vector3 maxV = bbox.getMaximum( );
+          for( unsigned int i = 0; i < 3; ++i )
+          {
+            minV[ i ] =
+              ( bb.getMinimum( )[ i ] < minV[ i ] )?
+              bb.getMinimum( )[ i ]: minV[ i ];
+            maxV[ i ] =
+              ( bb.getMaximum( )[ i ] > maxV[ i ] )?
+              bb.getMaximum( )[ i ]: maxV[ i ];
+          } // end for
+
+          bbox.setMinimum( minV );
+          bbox.setMaximum( maxV );
+
+        } // end for
+      } // end for
+      return( objects );
     }
 
 protected:

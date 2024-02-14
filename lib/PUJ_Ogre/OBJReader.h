@@ -7,6 +7,7 @@
 #include <array>
 #include <map>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace PUJ_Ogre
@@ -25,13 +26,18 @@ namespace PUJ_Ogre
     using TGroups  = std::map< std::string, TTopo >;
     using TObjects = std::map< std::string, TGroups >;
     using TGeom    = std::vector< TReal >;
+    using TIndices = std::vector< TNatural >;
+
+    using TBuffer = std::map< std::string, std::map< std::string, std::tuple< TGeom, TIndices, TIndices > > >;
 
   public:
     OBJReader( );
     virtual ~OBJReader( ) = default;
 
     const std::string& filename( ) const;
+    const TBuffer& buffer( ) const;
     bool read( const std::string& fname, bool phong_shading = true );
+    virtual bool read( std::istream& input, bool phong_shading = true );
 
   protected:
     virtual void _build_buffer( bool phong_shading );
@@ -42,10 +48,10 @@ namespace PUJ_Ogre
     TGeom m_Normals;
     TGeom m_Textures;
     TObjects m_Objects;
+
+    TBuffer m_Buffer;
   };
 } // end namespace
-
-#include <PUJ_Ogre/OBJReader.hxx>
 
 #endif // __PUJ_Ogre__OBJReader__h__
 

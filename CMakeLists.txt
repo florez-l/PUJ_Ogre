@@ -34,6 +34,9 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     )
 endif()
 
+# -- Library creation helpers
+include(GenerateExportHeader)
+
 # -- Packages
 find_package(CGAL REQUIRED COMPONENTS Core)
 find_package(OGRE REQUIRED)
@@ -47,6 +50,6 @@ find_package(OGRE REQUIRED)
 #find_package(Bullet REQUIRED)
 
 # -- Targets
-subdirs(apps)
+subdirs(apps lib)
 
 ## eof - CMakeLists.txt

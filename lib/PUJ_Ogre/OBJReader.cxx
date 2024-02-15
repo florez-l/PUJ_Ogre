@@ -170,6 +170,107 @@ template< class _TReal, class _TNatural >
 void PUJ_Ogre::OBJReader< _TReal, _TNatural >::
 _build_buffer( bool phong_shading )
 {
+  if( this->m_Normals.size( ) > 0 )
+  {
+    this->m_Buffer.clear( );
+
+    for( const auto& o: this->m_Objects )
+    {
+      auto ob = this->m_Buffer.insert(
+        std::make_pair(
+          o.first,
+          std::map< std::string, std::tuple< TGeom, TIndices, TIndices > >( )
+          )
+        ).first;
+      for( const auto& g: o.second )
+      {
+        auto og = ob->second.insert(
+          std::make_pair(
+            g.first,
+            std::make_tuple( TGeom( ), TIndices( ), TIndices( ) )
+            )
+          ).first;
+        TNatural npnts = 0;
+        for( const auto& f: g.second )
+        {
+          for( const auto& i: f )
+          {
+            auto p = ( i[ 0 ] - 1 ) * 4;
+            auto n = ( i[ 2 ] - 1 ) * 3;
+
+            std::get< 0 >( og->second ).push_back( this->m_Points[ p ] );
+            std::get< 0 >( og->second ).push_back( this->m_Points[ p + 1 ] );
+            std::get< 0 >( og->second ).push_back( this->m_Points[ p + 2 ] );
+            std::get< 0 >( og->second ).push_back( this->m_Normals[ n ] );
+            std::get< 0 >( og->second ).push_back( this->m_Normals[ n + 1 ] );
+            std::get< 0 >( og->second ).push_back( this->m_Normals[ n + 2 ] );
+            std::get< 0 >( og->second ).push_back( TReal( 0 ) );
+            std::get< 0 >( og->second ).push_back( TReal( 0 ) );
+
+            if( f.size( ) == 3 )
+              std::get< 1 >( og->second ).push_back( npnts++ );
+            else if( f.size( ) == 4 )
+              std::get< 2 >( og->second ).push_back( npnts++ );
+          } // end for
+        } // end for
+      } // end for
+    } // end for
+
+    /* TODO
+       if( phong_shading )
+       {
+       _TNM normals = mesh.template add_property_map< _TI, _TV >(
+       "v:normals", CGAL::NULL_VECTOR
+       ).first;
+       CGAL::Polygon_mesh_processing
+       ::compute_vertex_normals( mesh, normals );
+
+       auto& points = mesh.points( );
+       auto p = points.begin( );
+       auto n = normals.begin( );
+       for( ; p != points.end( ); ++p, ++n )
+       {
+       std::get< 0 >( og->second ).push_back( TReal( ( *p )[ 0 ] ) );
+       std::get< 0 >( og->second ).push_back( TReal( ( *p )[ 1 ] ) );
+       std::get< 0 >( og->second ).push_back( TReal( ( *p )[ 2 ] ) );
+       std::get< 0 >( og->second ).push_back( TReal( ( *n )[ 0 ] ) );
+       std::get< 0 >( og->second ).push_back( TReal( ( *n )[ 1 ] ) );
+       std::get< 0 >( og->second ).push_back( TReal( ( *n )[ 2 ] ) );
+       std::get< 0 >( og->second ).push_back( TReal( 0 ) );
+       std::get< 0 >( og->second ).push_back( TReal( 0 ) );
+       } // end for
+
+       CGAL::Vertex_around_face_iterator< _TM > vb, ve;
+       auto faces = mesh.faces( );
+       for( const auto& f: mesh.faces( ) )
+       {
+       boost::tie( vb, ve ) =
+       CGAL::vertices_around_face( mesh.halfedge( f ), mesh );
+       unsigned int s = std::distance( vb, ve );
+       for( ; vb != ve; ++vb )
+       {
+       if( s == 3 )
+       std::get< 1 >( og->second ).push_back( TNatural( *vb ) );
+       else if( s == 4 )
+       std::get< 2 >( og->second ).push_back( TNatural( *vb ) );
+       } // end for
+       } // end for
+
+       std::get< 0 >( og->second ).shrink_to_fit( );
+       std::get< 1 >( og->second ).shrink_to_fit( );
+       std::get< 2 >( og->second ).shrink_to_fit( );
+       }
+    */
+  }
+  else
+    this->_build_buffer_without_normals( phong_shading );
+}
+
+// -------------------------------------------------------------------------
+template< class _TReal, class _TNatural >
+void PUJ_Ogre::OBJReader< _TReal, _TNatural >::
+_build_buffer_without_normals( bool phong_shading )
+{
   using _TK = CGAL::Exact_predicates_inexact_constructions_kernel;
   using _TP = _TK::Point_3;
   using _TV = _TK::Vector_3;

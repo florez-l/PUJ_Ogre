@@ -41,6 +41,7 @@ namespace PUJ_Ogre
 
   protected:
     virtual void _build_buffer( bool phong_shading );
+    virtual void _build_buffer_without_normals( bool phong_shading );
 
   protected:
     std::string m_FileName { "" };

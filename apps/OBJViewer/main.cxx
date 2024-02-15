@@ -2,6 +2,38 @@
 // @author Leonardo Florez-Valencia (florez-l@javeriana.edu.co)
 // =========================================================================
 
+/* TODO
+material Template/Red
+{
+   technique
+   {
+        pass solidPass
+        {
+            // sets your object's colour, texture etc.
+         lighting on
+
+         ambient 0.3 0.1 0.1 1
+         diffuse 0.8 0.05 0.05 1
+         emissive 1 0 0 1
+            // ... leave what you have here
+
+            polygon_mode solid // sets to render the object as a solid
+
+        }
+
+        pass wireframePass
+        {
+         lighting on
+         ambient 0 0 1 1
+         diffuse 0 0 1 1
+         emissive 0 0 1 1
+            polygon_mode wireframe // sets to render the object as a wireframe
+        }
+
+   }
+}
+*/
+
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -140,6 +172,7 @@ protected:
       // Load mesh
       Ogre::AxisAlignedBox bbox;
       this->_loadMeshFromUnconventionalFile( bbox, this->m_FileName );
+      bbox.scale( Ogre::Vector3( 2, 2, 2 ) );
 
       // Configure lights
       this->m_SceneMgr->setAmbientLight( Ogre::ColourValue( 1, 1, 1 ) );

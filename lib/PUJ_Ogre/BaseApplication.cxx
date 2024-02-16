@@ -103,34 +103,20 @@ _configureCamera( const Ogre::AxisAlignedBox& bbox )
   auto* root = this->getRoot( );
   auto* root_node = this->m_SceneMgr->getRootSceneNode( );
 
-  Ogre::Real sc = 2;
-  Ogre::Matrix4 tr(
-    sc, 0, 0, bbox.getCenter( )[ 0 ] * ( 1 - sc ),
-    0, sc, 0, bbox.getCenter( )[ 1 ] * ( 1 - sc ),
-    0, 0, sc, bbox.getCenter( )[ 2 ] * ( 1 - sc ),
-    0, 0, 0, 1
-    );
-  std::cout << tr << std::endl;
-  Ogre::AxisAlignedBox bbox2 = bbox;
-  bbox2.transform( tr );
-
-  std::cout << bbox << std::endl;
-  std::cout << bbox.getCenter( ) << std::endl;
-  std::cout << bbox2 << std::endl;
-  std::cout << bbox2.getCenter( ) << std::endl;
-
   // Configure camera
   auto cam = this->m_SceneMgr->createCamera( "MainCamera" );
   cam->setNearClipDistance( 0.005 );
   cam->setAutoAspectRatio( true );
+
   auto camnode = root_node->createChildSceneNode( );
-  camnode->setPosition( bbox2.getCenter( ) );
-  camnode->lookAt( bbox2.getMaximum( ), Ogre::Node::TS_WORLD );
+  // TODO: camnode->setPosition( bbox.getMaximum( ) );
+  camnode->setPosition( Ogre::Vector3( 2.25, 1.05, 9.75 ) );
+
+  // camnode->lookAt( bbox.getMaximum( ), Ogre::Node::TS_WORLD );
+  camnode->lookAt( Ogre::Vector3( 0, 0, 0 ), Ogre::Node::TS_WORLD );
   camnode->attachObject( cam );
 
-  cam->setAutoAspectRatio( true );
-
-  this->m_CamMan = new OgreBites::CameraMan( cam->getParentSceneNode( ) );
+  this->m_CamMan = new OgreBites::CameraMan( camnode );
   this->m_CamMan->setStyle( OgreBites::CS_ORBIT /*FREELOOK*/ );
   this->m_CamMan->setTopSpeed( 3 );
   this->m_CamMan->setFixedYaw( true );
@@ -147,8 +133,7 @@ _loadMeshFromUnconventionalFile(
   )
 {
   PUJ_Ogre::OBJReader reader;
-  auto c = Ogre::ResourceGroupManager::getSingleton( )
-    .openResource( fname );
+  auto c = Ogre::ResourceGroupManager::getSingleton( ).openResource( fname );
   std::istringstream input( c->getAsString( ) );
   reader.read( input, true );
   const auto& buffer = reader.buffer( );
@@ -195,7 +180,6 @@ _loadMeshFromUnconventionalFile(
           );
 
       man->end( );
-      this->m_SceneMgr->getRootSceneNode( )->createChildSceneNode( )->attachObject( man );
 
       objects.push_back( man );
 

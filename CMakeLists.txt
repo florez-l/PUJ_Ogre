@@ -40,16 +40,17 @@ include(GenerateExportHeader)
 # -- Packages
 find_package(CGAL REQUIRED COMPONENTS Core)
 find_package(OGRE REQUIRED)
+find_package(VTK REQUIRED)
 
 #set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 ### -- Packages
-#find_package(VTK REQUIRED)
+#
 #
 #find_package(Bullet REQUIRED)
 
 # -- Targets
-subdirs(apps lib)
+subdirs(apps bash lib)
 
 ## eof - CMakeLists.txt

@@ -2,11 +2,9 @@
 ## @author Leonardo Florez-Valencia (florez-l@javeriana.edu.co)
 ## =========================================================================
 
-include_directories(
-  ${PROJECT_BINARY_DIR}/lib
-  ${PROJECT_SOURCE_DIR}/lib
-  )
+add_executable(PUJ_Ogre_Tejo main.cxx)
+target_link_libraries(PUJ_Ogre_Tejo PUJ_Ogre)
 
-subdirs(OBJViewer Tejo)
+subdirs(resources)
 
 ## eof - CMakeLists.txt

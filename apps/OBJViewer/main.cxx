@@ -70,14 +70,27 @@ protected:
       auto* root_node = this->m_SceneMgr->getRootSceneNode( );
 
       // Load mesh
-      Ogre::AxisAlignedBox bbox;
-      this->_loadMeshFromUnconventionalFile( bbox, this->m_FileName );
-      // bbox.scale( Ogre::Vector3( 2, 2, 2 ) );
+      Ogre::AxisAlignedBox bbox, bbox2;
+      auto objects = this->_loadMeshFromUnconventionalFile(
+        bbox, this->m_FileName
+        );
+      for( auto o: objects )
+        root_node->createChildSceneNode( )->attachObject( o );
+
+      Ogre::Real sc = 2;
+      Ogre::Matrix4 tr(
+        sc, 0, 0, bbox.getCenter( )[ 0 ] * ( 1 - sc ),
+        0, sc, 0, bbox.getCenter( )[ 1 ] * ( 1 - sc ),
+        0, 0, sc, bbox.getCenter( )[ 2 ] * ( 1 - sc ),
+        0, 0, 0, 1
+        );
+      bbox2 = bbox;
+      bbox2.transform( tr );
 
       // Configure lights
       this->m_SceneMgr->setAmbientLight( Ogre::ColourValue( 1, 1, 1 ) );
 
-      auto corners = bbox.getAllCorners( );
+      auto corners = bbox2.getAllCorners( );
       for( unsigned int i = 0; i < 8; ++i )
       {
         std::stringstream n;

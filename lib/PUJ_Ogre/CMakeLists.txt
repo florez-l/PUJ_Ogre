@@ -8,11 +8,13 @@ include_directories(
   )
 set(
   _hdr
+  BaseApplication.h
   Export.h
   OBJReader.h
   )
 set(
   _src
+  BaseApplication.cxx
   OBJReader.cxx
   )
 

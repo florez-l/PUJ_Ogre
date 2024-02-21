@@ -1,4 +1,4 @@
-material cancha.obj
+material cancha_tejo_material
 {
    technique
    {
@@ -23,6 +23,36 @@ material cancha.obj
          diffuse 0 0 1 1
          emissive 0 0 1 1
             polygon_mode wireframe // sets to render the object as a wireframe
+        }
+
+   }
+}
+
+material tejo_tejo_material
+{
+   technique
+   {
+        pass solidPass
+        {
+            // sets your object's colour, texture etc.
+         lighting on
+
+         ambient 0.1 0.3 0.1 1
+         diffuse 0.05 0.8 0.05 1
+         emissive 0 1 0 1
+            // ... leave what you have here
+
+            polygon_mode solid // sets to render the object as a solid
+
+        }
+
+        pass wireframePass
+        {
+         lighting on
+         ambient 1 0 1 1
+         diffuse 1 0 1 1
+         emissive 1 0 1 1
+         polygon_mode wireframe // sets to render the object as a wireframe
         }
 
    }

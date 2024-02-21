@@ -3,19 +3,24 @@
 ## =========================================================================
 
 include_directories(
+  ${BULLET_INCLUDE_DIRS}
   ${PROJECT_BINARY_DIR}/lib
   ${PROJECT_SOURCE_DIR}/lib
   )
 set(
   _hdr
   BaseApplication.h
+  BaseApplicationWithBullet.h
   Export.h
   OBJReader.h
+  OgreBullet.h
   )
 set(
   _src
   BaseApplication.cxx
+  BaseApplicationWithBullet.cxx
   OBJReader.cxx
+  OgreBullet.cxx
   )
 
 add_library(PUJ_Ogre SHARED "${_hdr};${_src}")
@@ -28,6 +33,7 @@ target_link_libraries(
   PUJ_Ogre
   stdc++fs gmp
   OgreMain OgreBites
+  ${BULLET_LIBRARIES}
   )
 
 ## eof - CMakeLists.txt

@@ -13,10 +13,10 @@
 #include <PUJ_Ogre/OBJReader.h>
 
 // -------------------------------------------------------------------------
- PUJ_Ogre::BaseApplication::
- BaseApplication( const std::string& app_name, const std::string& resources )
-   : TContext( app_name ),
-     TListener( )
+PUJ_Ogre::BaseApplication::
+BaseApplication( const std::string& app_name, const std::string& resources )
+  : TContext( app_name ),
+    TListener( )
 {
   this->m_Resources =
     std::filesystem::canonical( std::filesystem::path( resources ) )
@@ -153,15 +153,17 @@ _loadMeshFromUnconventionalFile(
     for( const auto& g: o.second )
     {
       std::stringstream n;
-      n << o.first << "_" << g.first << std::endl;
+      n << o.first << "_" << g.first;
       const auto& geom = std::get< 0 >( g.second );
       const auto& tria = std::get< 1 >( g.second );
       const auto& quad = std::get< 2 >( g.second );
 
       Ogre::ManualObject* man =
         this->m_SceneMgr->createManualObject( n.str( ) );
+
+      n << "_material";
       man->begin(
-        "Template/Red", Ogre::RenderOperation::OT_TRIANGLE_LIST
+        n.str( ), Ogre::RenderOperation::OT_TRIANGLE_LIST
         );
 
       for( unsigned long long i = 0; i < geom.size( ); i += 8 )

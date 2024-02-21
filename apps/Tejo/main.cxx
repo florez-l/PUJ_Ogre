@@ -2,57 +2,19 @@
 // @author Leonardo Florez-Valencia (florez-l@javeriana.edu.co)
 // =========================================================================
 
-/* TODO
-material Template/Red
-{
-   technique
-   {
-        pass solidPass
-        {
-            // sets your object's colour, texture etc.
-         lighting on
-
-         ambient 0.3 0.1 0.1 1
-         diffuse 0.8 0.05 0.05 1
-         emissive 1 0 0 1
-            // ... leave what you have here
-
-            polygon_mode solid // sets to render the object as a solid
-
-        }
-
-        pass wireframePass
-        {
-         lighting on
-         ambient 0 0 1 1
-         diffuse 0 0 1 1
-         emissive 0 0 1 1
-            polygon_mode wireframe // sets to render the object as a wireframe
-        }
-
-   }
-}
-*/
-
 #include <iostream>
+#include <PUJ_Ogre/BaseApplicationWithBullet.h>
 
-/* TODO
-   #include <filesystem>
-   #include <cstdio>
-   #include <cstring>
-   #include <sstream>
-   #include <unistd.h>
-*/
-
-#include <PUJ_Ogre/BaseApplication.h>
+#include <Ogre.h>
+#include <OgreCameraMan.h>
 
 /**
  */
 class Application
-  : public PUJ_Ogre::BaseApplication
+  : public PUJ_Ogre::BaseApplicationWithBullet
 {
 public:
-  using Superclass  = PUJ_Ogre::BaseApplication;
+  using Superclass  = PUJ_Ogre::BaseApplicationWithBullet;
 
 public:
   Application(
@@ -67,18 +29,7 @@ public:
   virtual void loadResources( ) override
     {
       auto res_mgr = Ogre::ResourceGroupManager::getSingletonPtr( );
-
-      /* TODO
-         ResourceGroupManager::getSingleton().addResourceLocation("asset/table.zip", "Zip", "Scene");
-      */
       res_mgr->addResourceLocation( this->m_Resources, "Zip", "General" );
-
-      /* TODO
-         auto settings = cf.getSettingsBySection( );
-         for( auto sIt = settings.begin( ); sIt != settings.end( ); ++sIt )
-         for( auto fIt = sIt->second.begin( ); fIt != sIt->second.end( ); ++fIt )
-         res_mgr->addResourceLocation( fIt->second, fIt->first, sIt->first );
-      */
       try
       {
         res_mgr->initialiseAllResourceGroups( );
@@ -91,18 +42,59 @@ public:
     }
 
 protected:
+
+  virtual void _configureCamera( const Ogre::AxisAlignedBox& bbox ) override
+    {
+      auto* root = this->getRoot( );
+      auto* root_node = this->m_SceneMgr->getRootSceneNode( );
+
+      // Configure camera
+      auto cam = this->m_SceneMgr->createCamera( "Camera" );
+      cam->setNearClipDistance( 0.005 );
+      cam->setAutoAspectRatio( true );
+      auto vp = this->getRenderWindow( )->addViewport( cam );
+      vp->setBackgroundColour( Ogre::ColourValue( 0, 0, 0 ) );
+
+      auto camnode = root_node->createChildSceneNode( );
+      camnode->attachObject( cam );
+
+      this->m_CamMan = new OgreBites::CameraMan( camnode );
+      this->m_CamMan->setStyle( OgreBites::CS_FREELOOK );
+      this->m_CamMan->setTopSpeed( 1.2 );
+      this->m_CamMan->setFixedYaw( true );
+      this->addInputListener( this->m_CamMan );
+
+      camnode->setPosition( bbox.getCenter( ) );
+      camnode->lookAt( Ogre::Vector3( 0, 0, -1 ), Ogre::Node::TS_WORLD );
+    }
+
   virtual void _loadScene( ) override
     {
       auto* root = this->getRoot( );
       auto* root_node = this->m_SceneMgr->getRootSceneNode( );
 
-      // Load field
-      Ogre::AxisAlignedBox bbox;
-      auto objs = this->_loadMeshFromUnconventionalFile( bbox, "cancha.obj" );
-      for( auto o: objs )
-        root_node->createChildSceneNode( )->attachObject( o );
+      // Load tejo
+      auto tejo =
+        this->_loadMeshFromUnconventionalFile( this->m_BBox, "sphere.obj" );
+      this->m_Tejo = root_node->createChildSceneNode( );
+      this->m_Tejo->attachObject( tejo[ 0 ] );
 
-      // TODO: center -> Vector3(2.25, 2, 9.75)
+      // Load field
+      auto field =
+        this->_loadMeshFromUnconventionalFile( this->m_BBox, "cancha.obj" );
+      this->m_Field = root_node->createChildSceneNode( );
+      this->m_Field->attachObject( field[ 0 ] );
+
+      // Position all objects
+      this->m_Tejo->setPosition( this->m_BBox.getCenter( ) );
+
+      // Configure camera
+      this->_configureCamera( this->m_BBox );
+
+      /* TODO
+         for( auto o: tejo )
+         root_node->createChildSceneNode( )->attachObject( o );
+      */
 
       // Load mesh
       /* TODO
@@ -127,17 +119,17 @@ protected:
       // Configure lights
       this->m_SceneMgr->setAmbientLight( Ogre::ColourValue( 0.1, 0.1, 0 ) );
 
-      Ogre::Light* l = this->m_SceneMgr->createLight( "main_light" );
-      l->setDiffuseColour( 0.1, 1, 1 );
-      l->setSpecularColour( 0.1, 1, 1 );
-      l->setType( Ogre::Light::LT_POINT );
-
-      Ogre::SceneNode* ln = root_node->createChildSceneNode( );
-      ln->attachObject( l );
-      ln->setPosition( Ogre::Vector3( 2.25, 1.05, 9.75 ) );
-      std::cout << bbox.getCenter( ) << std::endl;
-
       /* TODO
+         Ogre::Light* l = this->m_SceneMgr->createLight( "main_light" );
+         l->setDiffuseColour( 0.1, 1, 1 );
+         l->setSpecularColour( 0.1, 1, 1 );
+         l->setType( Ogre::Light::LT_POINT );
+
+         Ogre::SceneNode* ln = root_node->createChildSceneNode( );
+         ln->attachObject( l );
+         ln->setPosition( Ogre::Vector3( 2.25, 1.05, 9.75 ) );
+         std::cout << bbox.getCenter( ) << std::endl;
+
          auto corners = bbox.getAllCorners( );
          for( unsigned int i = 0; i < 8; ++i )
          {
@@ -152,55 +144,33 @@ protected:
          ln->attachObject( l );
          ln->setPosition( corners[ i ] );
          } // end for
+
       */
-
-      // Configure camera
-      this->_configureCamera( bbox );
     }
-};
 
+  virtual void _connect_Ogre_Bullet( ) override
+    {
+      auto field =
+        dynamic_cast< Ogre::ManualObject* >(
+          this->m_Field->getAttachedObject( 0 )
+          );
+
+      std::cout << field << std::endl;
+      std::exit( 1 );
+
+    }
+
+protected:
+  Ogre::AxisAlignedBox m_BBox;
+  Ogre::SceneNode* m_Field;
+  Ogre::SceneNode* m_Tejo;
+};
 
 int main( int argc, char** argv )
 {
-  // Create temporary resources file
-  // TODO: 
-  /* TODO
-     std::stringstream str;
-     str
-     << std::filesystem::path( argv[ 0 ] ).filename( ).stem( ).string( )
-     << "_resources_XXXXXX";
-     std::string fname =
-     ( std::filesystem::temp_directory_path( ) / str.str( ) ).string( );
-     char* filename = new char[ fname.size( ) + 1 ];
-     std::strcpy( filename, fname.c_str( ) );
-     int fd = mkstemp( filename );
-     if( fd == -1 )
-     {
-     std::cerr
-     << "Error: could not create temporary resources file."
-     << std::endl;
-     return( EXIT_FAILURE );
-     } // end if
-
-     // Save resources
-     std::stringstream data;
-     data
-     << "[General]" << std::endl
-     << "FileSystem="
-     << std::filesystem::path( argv[ 1 ] ).parent_path( ).string( );
-     write( fd, data.str( ).c_str( ), data.str( ).size( ) );
-  */
-
-  // Execute application
   Application app( "Tejo!" );
   app.go( );
 
-  // Close application
-  /* TODO
-     close( fd );
-     unlink( filename );
-     delete filename;
-  */
   return( EXIT_SUCCESS );
 }
 

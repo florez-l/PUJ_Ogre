@@ -41,6 +41,45 @@ public:
       }
     }
 
+  virtual bool keyPressed( const OgreBites::KeyboardEvent& evt ) override
+    {
+      if( evt.keysym.sym == 'g' )
+      {
+        this->m_Simulating = true;
+      }
+      return( this->Superclass::keyPressed( evt ) );
+    }
+
+  virtual bool frameStarted( const Ogre::FrameEvent& evt ) override
+    {
+      if( this->m_Simulating )
+      {
+        auto dw = this->m_BulletWorld->getBtWorld( );
+
+        dw->stepSimulation( evt.timeSinceLastFrame, 2 );
+
+        //print positions of all objects
+        /* TODO
+           for (int j = dw->getNumCollisionObjects() - 1; j >= 0; j--)
+           {
+           btCollisionObject* obj = dw->getCollisionObjectArray()[j];
+           btRigidBody* body = btRigidBody::upcast(obj);
+           btTransform trans;
+           if (body && body->getMotionState())
+           {
+           body->getMotionState()->getWorldTransform(trans);
+           }
+           else
+           {
+           trans = obj->getWorldTransform();
+           }
+           printf("world pos object %d = %f,%f,%f\n", j, float(trans.getOrigin().getX()), float(trans.getOrigin().getY()), float(trans.getOrigin().getZ()));
+           }
+         */
+      } // end if
+      return( this->Superclass::frameStarted( evt ) );
+    }
+
 protected:
 
   virtual void _configureCamera( const Ogre::AxisAlignedBox& bbox ) override
@@ -75,15 +114,19 @@ protected:
 
       // Load tejo
       auto tejo =
-        this->_loadMeshFromUnconventionalFile( this->m_BBox, "sphere.obj" );
+        this->_loadMeshFromUnconventionalFile( this->m_BBox, "sphere.obj" )[ 0 ];
+      auto tejo_mesh = tejo->convertToMesh( "tejo_mesh" );
+      auto tejo_entity = this->m_SceneMgr->createEntity( "tejo_entity", "tejo_mesh" );
       this->m_Tejo = root_node->createChildSceneNode( );
-      this->m_Tejo->attachObject( tejo[ 0 ] );
+      this->m_Tejo->attachObject( tejo_entity );
 
       // Load field
       auto field =
-        this->_loadMeshFromUnconventionalFile( this->m_BBox, "cancha.obj" );
+        this->_loadMeshFromUnconventionalFile( this->m_BBox, "cancha.obj" )[ 0 ];
+      auto field_mesh = field->convertToMesh( "field_mesh" );
+      auto field_entity = this->m_SceneMgr->createEntity( "field_entity", "field_mesh" );
       this->m_Field = root_node->createChildSceneNode( );
-      this->m_Field->attachObject( field[ 0 ] );
+      this->m_Field->attachObject( field_entity );
 
       // Position all objects
       this->m_Tejo->setPosition( this->m_BBox.getCenter( ) );
@@ -151,19 +194,39 @@ protected:
   virtual void _connect_Ogre_Bullet( ) override
     {
       auto field =
-        dynamic_cast< Ogre::ManualObject* >(
+        dynamic_cast< Ogre::Entity* >(
           this->m_Field->getAttachedObject( 0 )
           );
+      this->m_BulletWorld->addCollisionObject( field, PUJ_Ogre::Bullet::CT_TRIMESH );
+      // this->m_BulletWorld->addRigidBody( 0, field, PUJ_Ogre::Bullet::CT_TRIMESH );
 
-      std::cout << field << std::endl;
-      std::exit( 1 );
+      auto tejo =
+        dynamic_cast< Ogre::Entity* >(
+          this->m_Tejo->getAttachedObject( 0 )
+          );
+      this->m_BulletWorld->addRigidBody( 1, tejo, PUJ_Ogre::Bullet::CT_SPHERE );
 
+      /* TODO
+         btRigidBody* addRigidBody(
+         float mass,
+         Ogre::Entity* ent,
+         ColliderType ct,
+         CollisionListener* listener = nullptr,
+         int group = 1, int mask = -1
+         );
+
+         btCollisionObject* addCollisionObject(
+         Ogre::Entity* ent, ColliderType ct, int group = 1, int mask = -1
+         );
+      */
     }
 
 protected:
   Ogre::AxisAlignedBox m_BBox;
   Ogre::SceneNode* m_Field;
   Ogre::SceneNode* m_Tejo;
+
+  bool m_Simulating { false };
 };
 
 int main( int argc, char** argv )

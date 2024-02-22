@@ -5,7 +5,8 @@
 #define __PUJ_Ogre__BaseApplicationWithBullet__h__
 
 #include <PUJ_Ogre/BaseApplication.h>
-#include <btBulletDynamicsCommon.h>
+#include <PUJ_Ogre/OgreBullet.h>
+// TODO: #include <btBulletDynamicsCommon.h>
 
 namespace PUJ_Ogre
 {
@@ -52,12 +53,16 @@ namespace PUJ_Ogre
     */
 
   protected:
-    btDefaultCollisionConfiguration* m_BulletCollisionConfiguration;
-    btCollisionDispatcher* m_BulletDispatcher;
-    btBroadphaseInterface* m_BulletOverlappingPairCache;
-    btSequentialImpulseConstraintSolver* m_BulletSolver;
-    btDiscreteDynamicsWorld* m_BulletDynamicsWorld;
-    btAlignedObjectArray< btCollisionShape* > m_BulletCollisionShapes;
+    /* TODO
+       btDefaultCollisionConfiguration* m_BulletCollisionConfiguration;
+       btCollisionDispatcher* m_BulletDispatcher;
+       btBroadphaseInterface* m_BulletOverlappingPairCache;
+       btSequentialImpulseConstraintSolver* m_BulletSolver;
+       btDiscreteDynamicsWorld* m_BulletDynamicsWorld;
+       btAlignedObjectArray< btCollisionShape* > m_BulletCollisionShapes;
+    */
+    PUJ_Ogre::Bullet::DynamicsWorld* m_BulletWorld;
+
 
     /* TODO
        std::string           m_Resources;

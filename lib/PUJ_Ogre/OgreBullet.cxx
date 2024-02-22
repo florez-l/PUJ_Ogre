@@ -65,33 +65,33 @@ namespace PUJ_Ogre
       return shape;
     }
 
-/// create capsule collider using ogre provided data
-btCylinderShape* createCylinderCollider( const Ogre::MovableObject* mo )
-{
-  OgreAssert( mo->getParentSceneNode( ), "MovableObject must be attached" );
+    /// create capsule collider using ogre provided data
+    btCylinderShape* createCylinderCollider( const Ogre::MovableObject* mo )
+    {
+      OgreAssert( mo->getParentSceneNode( ), "MovableObject must be attached" );
 
-  auto sz = convert( mo->getBoundingBox( ).getHalfSize( ) );
+      auto sz = convert( mo->getBoundingBox( ).getHalfSize( ) );
 
-  btScalar height = std::max( sz.x( ), std::max( sz.y( ), sz.z( ) ) );
-  btCylinderShape* shape;
-  // Orient the capsule such that its height is aligned with the largest dimension.
-  if ( height == sz.y( ) )
-  {
-    shape = new btCylinderShape( sz );
-  }
-  else if ( height == sz.x( ) )
-  {
-    shape = new btCylinderShapeX( sz );
-  }
-  else
-  {
-    shape = new btCylinderShapeZ( sz );
-  }
+      btScalar height = std::max( sz.x( ), std::max( sz.y( ), sz.z( ) ) );
+      btCylinderShape* shape;
+      // Orient the capsule such that its height is aligned with the largest dimension.
+      if ( height == sz.y( ) )
+      {
+        shape = new btCylinderShape( sz );
+      }
+      else if ( height == sz.x( ) )
+      {
+        shape = new btCylinderShapeX( sz );
+      }
+      else
+      {
+        shape = new btCylinderShapeZ( sz );
+      }
 
-  shape->setLocalScaling( convert( mo->getParentSceneNode( )->getScale( ) ) );
+      shape->setLocalScaling( convert( mo->getParentSceneNode( )->getScale( ) ) );
 
-  return shape;
-}
+      return shape;
+    }
 
     struct EntityCollisionListener
     {

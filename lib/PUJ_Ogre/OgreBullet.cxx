@@ -6,6 +6,8 @@
 // SPDX-License-Identifier: MIT
 // =========================================================================
 
+#include <iostream>
+
 #include <PUJ_Ogre/OgreBullet.h>
 
 namespace PUJ_Ogre
@@ -102,6 +104,7 @@ namespace PUJ_Ogre
     static void onTick( btDynamicsWorld* world, btScalar timeStep )
     {
       int numManifolds = world->getDispatcher( )->getNumManifolds( );
+
       auto manifolds = world->getDispatcher( )->getInternalManifoldPointer( );
       for ( int i = 0; i < numManifolds; i++ )
       {
@@ -266,6 +269,15 @@ public:
       // transfer ownership to node
       auto objWrapper = std::make_shared<RigidBody>( rb, mBtWorld );
       node->getUserObjectBindings( ).setUserAny( "BtCollisionObject", objWrapper );
+
+      rb->setDamping( 0.1, 0.1 );
+
+      /* TODO
+         std::cout << rb->getAngularDamping( ) << std::endl;
+         std::cout << rb->getContactDamping( ) << std::endl;
+         std::cout << rb->getLinearDamping( ) << std::endl;
+         std::exit( 1 );
+      */
 
       return rb;
     }

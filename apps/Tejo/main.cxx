@@ -60,7 +60,7 @@ bool Application::
 keyPressed( const OgreBites::KeyboardEvent& evt )
 {
   if( evt.keysym.sym == 'g' )
-    this->m_Simulating = true;
+    this->m_Simulating = !( this->m_Simulating );
   return( this->Superclass::keyPressed( evt ) );
 }
 
@@ -83,7 +83,8 @@ frameStarted( const Ogre::FrameEvent& evt )
   }
   else
     this->m_BulletWorld->getBtWorld( )
-      ->stepSimulation( evt.timeSinceLastFrame, 2 );
+      ->stepSimulation( evt.timeSinceLastFrame, 1 );
+
   return( this->Superclass::frameStarted( evt ) );
 }
 

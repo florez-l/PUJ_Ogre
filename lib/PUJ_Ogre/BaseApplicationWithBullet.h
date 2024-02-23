@@ -21,7 +21,8 @@ namespace PUJ_Ogre
   public:
     BaseApplicationWithBullet(
       const std::string& app_name,
-      const std::string& resources = "resources.cfg"
+      const std::string& resources = "resources.cfg",
+      bool real_resources_file = true
       );
     virtual ~BaseApplicationWithBullet( ) override;
 

@@ -71,9 +71,7 @@ protected:
 
       // Load mesh
       Ogre::AxisAlignedBox bbox, bbox2;
-      auto objects = this->_loadMeshFromUnconventionalFile(
-        bbox, this->m_FileName
-        );
+      auto objects = this->_loadOBJ( bbox, this->m_FileName );
       for( auto o: objects )
         root_node->createChildSceneNode( )->attachObject( o );
 

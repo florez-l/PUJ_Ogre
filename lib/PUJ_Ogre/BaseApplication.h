@@ -25,7 +25,8 @@ namespace PUJ_Ogre
   public:
     BaseApplication(
       const std::string& app_name,
-      const std::string& resources = "resources.cfg"
+      const std::string& resources = "resources.cfg",
+      bool real_resources_file = true
       );
     virtual ~BaseApplication( ) override = default;
 
@@ -44,14 +45,15 @@ namespace PUJ_Ogre
     virtual void _initSceneManager( );
     virtual void _configureCamera( const Ogre::AxisAlignedBox& bbox );
     virtual void _loadScene( ) = 0;
-
-    virtual std::vector< Ogre::ManualObject* > _loadMeshFromUnconventionalFile(
+    
+    virtual std::vector< Ogre::ManualObject* > _loadOBJ(
       Ogre::AxisAlignedBox& bbox,
       const std::string& fname
       );
 
   protected:
     std::string           m_Resources;
+    bool                  m_RealResourcesFile;
     Ogre::SceneManager*   m_SceneMgr;
     OgreBites::CameraMan* m_CamMan;
   };

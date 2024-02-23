@@ -14,9 +14,14 @@
 
 // -------------------------------------------------------------------------
 PUJ_Ogre::BaseApplication::
-BaseApplication( const std::string& app_name, const std::string& resources )
+BaseApplication(
+  const std::string& app_name,
+  const std::string& resources,
+  bool real_resources_file
+  )
   : TContext( app_name ),
-    TListener( )
+    TListener( ),
+    m_RealResourcesFile( real_resources_file )
 {
   this->m_Resources =
     std::filesystem::canonical( std::filesystem::path( resources ) )
@@ -33,15 +38,21 @@ locateResources( )
 void PUJ_Ogre::BaseApplication::
 loadResources( )
 {
-  this->enableShaderCache( );
-  Ogre::ConfigFile cf = Ogre::ConfigFile( );
-  cf.loadDirect( this->m_Resources );
-
   auto res_mgr = Ogre::ResourceGroupManager::getSingletonPtr( );
-  auto settings = cf.getSettingsBySection( );
-  for( auto sIt = settings.begin( ); sIt != settings.end( ); ++sIt )
-    for( auto fIt = sIt->second.begin( ); fIt != sIt->second.end( ); ++fIt )
-      res_mgr->addResourceLocation( fIt->second, fIt->first, sIt->first );
+
+  if( this->m_RealResourcesFile )
+  {
+    this->enableShaderCache( );
+    Ogre::ConfigFile cf = Ogre::ConfigFile( );
+    cf.loadDirect( this->m_Resources );
+
+    auto settings = cf.getSettingsBySection( );
+    for( auto s = settings.begin( ); s != settings.end( ); ++s )
+      for( auto f = s->second.begin( ); f != s->second.end( ); ++f )
+        res_mgr->addResourceLocation( f->second, f->first, s->first );
+  }
+  else
+    res_mgr->addResourceLocation( this->m_Resources, "Zip", "General" );
 
   try
   {
@@ -127,10 +138,7 @@ _configureCamera( const Ogre::AxisAlignedBox& bbox )
 
 // -------------------------------------------------------------------------
 std::vector< Ogre::ManualObject* > PUJ_Ogre::BaseApplication::
-_loadMeshFromUnconventionalFile(
-  Ogre::AxisAlignedBox& bbox,
-  const std::string& fname
-  )
+_loadOBJ( Ogre::AxisAlignedBox& bbox, const std::string& fname )
 {
   PUJ_Ogre::OBJReader reader;
   auto c = Ogre::ResourceGroupManager::getSingleton( ).openResource( fname );
@@ -138,18 +146,8 @@ _loadMeshFromUnconventionalFile(
   reader.read( input, true );
   const auto& buffer = reader.buffer( );
 
-  bbox = Ogre::AxisAlignedBox( );
   bool start_bb = true;
-  /* TODO
-     std::numeric_limits< Ogre::Real >::max( ),
-     std::numeric_limits< Ogre::Real >::max( ),
-     std::numeric_limits< Ogre::Real >::max( ),
-     std::numeric_limits< Ogre::Real >::lowest( ),
-     std::numeric_limits< Ogre::Real >::lowest( ),
-     std::numeric_limits< Ogre::Real >::lowest( )
-     );
-  */
-
+  bbox = Ogre::AxisAlignedBox( );
   std::vector< Ogre::ManualObject* > objects;
   for( const auto& o: buffer )
   {

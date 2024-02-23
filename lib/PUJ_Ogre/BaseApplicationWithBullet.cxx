@@ -7,9 +7,11 @@
 // -------------------------------------------------------------------------
 PUJ_Ogre::BaseApplicationWithBullet::
 BaseApplicationWithBullet(
-  const std::string& app_name, const std::string& resources
+  const std::string& app_name,
+  const std::string& resources,
+  bool real_resources_file
   )
-  : Superclass( app_name, resources )
+  : Superclass( app_name, resources, real_resources_file )
 {
 }
 

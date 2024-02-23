@@ -112,10 +112,12 @@ namespace PUJ_Ogre
           const btManifoldPoint& mp = manifold->getContactPoint( i );
           auto body0 = static_cast<EntityCollisionListener*>( manifold->getBody0( )->getUserPointer( ) );
           auto body1 = static_cast<EntityCollisionListener*>( manifold->getBody1( )->getUserPointer( ) );
-          if ( body0->listener )
-            body0->listener->contact( body1->entity, mp );
-          if ( body1->listener )
-            body1->listener->contact( body0->entity, mp );
+          if( body0 )
+            if ( body0->listener )
+              body0->listener->contact( body1->entity, mp );
+          if( body1 )
+            if ( body1->listener )
+              body1->listener->contact( body0->entity, mp );
         }
       }
     }

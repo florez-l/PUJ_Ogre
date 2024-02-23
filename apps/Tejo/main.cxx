@@ -54,28 +54,8 @@ public:
     {
       if( this->m_Simulating )
       {
-        auto dw = this->m_BulletWorld->getBtWorld( );
-
-        dw->stepSimulation( evt.timeSinceLastFrame, 2 );
-
-        //print positions of all objects
-        /* TODO
-           for (int j = dw->getNumCollisionObjects() - 1; j >= 0; j--)
-           {
-           btCollisionObject* obj = dw->getCollisionObjectArray()[j];
-           btRigidBody* body = btRigidBody::upcast(obj);
-           btTransform trans;
-           if (body && body->getMotionState())
-           {
-           body->getMotionState()->getWorldTransform(trans);
-           }
-           else
-           {
-           trans = obj->getWorldTransform();
-           }
-           printf("world pos object %d = %f,%f,%f\n", j, float(trans.getOrigin().getX()), float(trans.getOrigin().getY()), float(trans.getOrigin().getZ()));
-           }
-         */
+        this->m_BulletWorld->getBtWorld( )
+          ->stepSimulation( evt.timeSinceLastFrame, 2 );
       } // end if
       return( this->Superclass::frameStarted( evt ) );
     }
@@ -134,31 +114,6 @@ protected:
       // Configure camera
       this->_configureCamera( this->m_BBox );
 
-      /* TODO
-         for( auto o: tejo )
-         root_node->createChildSceneNode( )->attachObject( o );
-      */
-
-      // Load mesh
-      /* TODO
-         Ogre::AxisAlignedBox bbox, bbox2;
-         auto objects = this->_loadMeshFromUnconventionalFile(
-         bbox, this->m_FileName
-         );
-         for( auto o: objects )
-         root_node->createChildSceneNode( )->attachObject( o );
-
-         Ogre::Real sc = 2;
-         Ogre::Matrix4 tr(
-         sc, 0, 0, bbox.getCenter( )[ 0 ] * ( 1 - sc ),
-         0, sc, 0, bbox.getCenter( )[ 1 ] * ( 1 - sc ),
-         0, 0, sc, bbox.getCenter( )[ 2 ] * ( 1 - sc ),
-         0, 0, 0, 1
-         );
-         bbox2 = bbox;
-         bbox2.transform( tr );
-      */
-
       // Configure lights
       this->m_SceneMgr->setAmbientLight( Ogre::ColourValue( 0.1, 0.1, 0 ) );
 
@@ -187,38 +142,22 @@ protected:
          ln->attachObject( l );
          ln->setPosition( corners[ i ] );
          } // end for
-
       */
     }
 
   virtual void _connect_Ogre_Bullet( ) override
     {
+      auto tejo =
+        dynamic_cast< Ogre::Entity* >(
+          this->m_Tejo->getAttachedObject( 0 )
+          );
+      this->m_BulletWorld->addRigidBody( 0.1, tejo, PUJ_Ogre::Bullet::CT_SPHERE );
+
       auto field =
         dynamic_cast< Ogre::Entity* >(
           this->m_Field->getAttachedObject( 0 )
           );
       this->m_BulletWorld->addCollisionObject( field, PUJ_Ogre::Bullet::CT_TRIMESH );
-      // this->m_BulletWorld->addRigidBody( 0, field, PUJ_Ogre::Bullet::CT_TRIMESH );
-
-      auto tejo =
-        dynamic_cast< Ogre::Entity* >(
-          this->m_Tejo->getAttachedObject( 0 )
-          );
-      this->m_BulletWorld->addRigidBody( 1, tejo, PUJ_Ogre::Bullet::CT_SPHERE );
-
-      /* TODO
-         btRigidBody* addRigidBody(
-         float mass,
-         Ogre::Entity* ent,
-         ColliderType ct,
-         CollisionListener* listener = nullptr,
-         int group = 1, int mask = -1
-         );
-
-         btCollisionObject* addCollisionObject(
-         Ogre::Entity* ent, ColliderType ct, int group = 1, int mask = -1
-         );
-      */
     }
 
 protected:

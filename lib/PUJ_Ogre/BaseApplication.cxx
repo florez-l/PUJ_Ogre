@@ -138,14 +138,17 @@ _loadMeshFromUnconventionalFile(
   reader.read( input, true );
   const auto& buffer = reader.buffer( );
 
-  bbox = Ogre::AxisAlignedBox(
-    std::numeric_limits< Ogre::Real >::max( ),
-    std::numeric_limits< Ogre::Real >::max( ),
-    std::numeric_limits< Ogre::Real >::max( ),
-    std::numeric_limits< Ogre::Real >::lowest( ),
-    std::numeric_limits< Ogre::Real >::lowest( ),
-    std::numeric_limits< Ogre::Real >::lowest( )
-    );
+  bbox = Ogre::AxisAlignedBox( );
+  bool start_bb = true;
+  /* TODO
+     std::numeric_limits< Ogre::Real >::max( ),
+     std::numeric_limits< Ogre::Real >::max( ),
+     std::numeric_limits< Ogre::Real >::max( ),
+     std::numeric_limits< Ogre::Real >::lowest( ),
+     std::numeric_limits< Ogre::Real >::lowest( ),
+     std::numeric_limits< Ogre::Real >::lowest( )
+     );
+  */
 
   std::vector< Ogre::ManualObject* > objects;
   for( const auto& o: buffer )
@@ -186,20 +189,26 @@ _loadMeshFromUnconventionalFile(
       objects.push_back( man );
 
       Ogre::AxisAlignedBox bb = man->getBoundingBox( );
-      Ogre::Vector3 minV = bbox.getMinimum( );
-      Ogre::Vector3 maxV = bbox.getMaximum( );
-      for( unsigned int i = 0; i < 3; ++i )
+      if( start_bb )
       {
-        minV[ i ] =
-          ( bb.getMinimum( )[ i ] < minV[ i ] )?
-          bb.getMinimum( )[ i ]: minV[ i ];
-        maxV[ i ] =
-          ( bb.getMaximum( )[ i ] > maxV[ i ] )?
-          bb.getMaximum( )[ i ]: maxV[ i ];
-      } // end for
+        Ogre::Vector3 minV = bbox.getMinimum( );
+        Ogre::Vector3 maxV = bbox.getMaximum( );
+        for( unsigned int i = 0; i < 3; ++i )
+        {
+          minV[ i ] =
+            ( bb.getMinimum( )[ i ] < minV[ i ] )?
+            bb.getMinimum( )[ i ]: minV[ i ];
+          maxV[ i ] =
+            ( bb.getMaximum( )[ i ] > maxV[ i ] )?
+            bb.getMaximum( )[ i ]: maxV[ i ];
+        } // end for
 
-      bbox.setMinimum( minV );
-      bbox.setMaximum( maxV );
+        bbox.setMinimum( minV );
+        bbox.setMaximum( maxV );
+        start_bb = false;
+      }
+      else
+        bbox = bb;
 
     } // end for
   } // end for

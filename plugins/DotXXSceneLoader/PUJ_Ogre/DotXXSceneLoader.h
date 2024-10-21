@@ -1,0 +1,112 @@
+// =========================================================================
+// @author Leonardo Florez-Valencia (florez-l@javeriana.edu.co)
+// =========================================================================
+#ifndef PUJ_Ogre_plugins_DotXXSceneLoader__h__
+#define PUJ_Ogre_plugins_DotXXSceneLoader__h__
+
+#include <PUJ_Ogre/Plugin_PUJ_Ogre_DotXXSceneLoader_Export.h>
+
+#include <OgreColourValue.h>
+#include <OgreQuaternion.h>
+#include <OgreResourceGroupManager.h>
+#include <OgreString.h>
+#include <OgrePlugin.h>
+#include <OgreCodec.h>
+
+// Forward declarations
+namespace pugi { class xml_node; }
+namespace Ogre
+{
+  class SceneManager;
+  class SceneNode;
+} // end namespace
+
+namespace PUJ_Ogre
+{
+  /**
+   */
+  class Plugin_PUJ_Ogre_DotXXSceneLoader_EXPORT DotXXSceneLoader
+  {
+  public:
+    DotXXSceneLoader( );
+    virtual ~DotXXSceneLoader( );
+
+    void load( 
+      Ogre::DataStreamPtr& stream,
+      const Ogre::String& groupName,
+      Ogre::SceneNode* rootNode
+      );
+
+    void exportScene( 
+      Ogre::SceneNode* rootNode,
+      const Ogre::String& outFileName
+      );
+    const Ogre::ColourValue& getBackgroundColour( ) const;
+
+  protected:
+    void _process( pugi::xml_node& XMLRoot );
+    void _nodes( pugi::xml_node& XMLNode );
+    void _parametric2(
+      pugi::xml_node& XMLNode,
+      const Ogre::String& name,
+      const Ogre::String& material
+      );
+    
+    /* TODO
+       void writeNode( pugi::xml_node& parentXML, const SceneNode* node );
+
+       void processExternals( pugi::xml_node& XMLNode );
+       void processEnvironment( pugi::xml_node& XMLNode );
+       void processTerrainGroup( pugi::xml_node& XMLNode );
+       void processBlendmaps( pugi::xml_node& XMLNode );
+       void processUserData( pugi::xml_node& XMLNode, Ogre::UserObjectBindings& userData );
+       void processLight( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent = 0 );
+       void processCamera( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent = 0 );
+
+       void processNode( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent = 0 );
+       void processLookTarget( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent );
+       void processTrackTarget( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent );
+       void processEntity( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent );
+       void processParticleSystem( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent );
+       void processBillboardSet( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent );
+       void processPlane( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent );
+       void processNodeAnimations( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent );
+       void processNodeAnimation( pugi::xml_node& XMLNode, Ogre::SceneNode* pParent );
+       void processKeyframe( pugi::xml_node& XMLNode, Ogre::NodeAnimationTrack* pTrack );
+
+       void processFog( pugi::xml_node& XMLNode );
+       void processSkyBox( pugi::xml_node& XMLNode );
+       void processSkyDome( pugi::xml_node& XMLNode );
+       void processSkyPlane( pugi::xml_node& XMLNode );
+
+       void processLightRange( pugi::xml_node& XMLNode, Ogre::Light* pLight );
+       void processLightAttenuation( pugi::xml_node& XMLNode, Ogre::Light* pLight );
+       void processLightSourceSize( pugi::xml_node& XMLNode, Ogre::Light* pLight );
+    */
+  protected:
+    Ogre::SceneManager* m_SceneMgr;
+    Ogre::SceneNode*    m_AttachNode;
+    Ogre::String        m_sGroupName;
+    Ogre::ColourValue   m_BackgroundColour;
+  };
+
+  /**
+   */
+  class Plugin_PUJ_Ogre_DotXXSceneLoader_EXPORT DotXXScenePlugin
+    : public Ogre::Plugin
+  {
+    const Ogre::String& getName( ) const override;
+
+    void install( ) override;
+    void initialise( ) override;
+    void shutdown( ) override;
+    void uninstall( ) override;
+
+  private:
+    Ogre::Codec* m_Codec;
+  };
+} // end namespace
+
+#endif // PUJ_Ogre_plugins_DotXXSceneLoader__h__
+
+// eof - $RCSfile$

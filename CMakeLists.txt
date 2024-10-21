@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.20)
 project(PUJ_Ogre)
 
 # -- Some configurations
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
@@ -38,20 +38,31 @@ endif()
 include(GenerateExportHeader)
 
 # -- Packages
-find_package(CGAL REQUIRED COMPONENTS Core)
-find_package(Bullet REQUIRED)
 find_package(OGRE REQUIRED)
-find_package(VTK REQUIRED)
 
-#set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-
-### -- Packages
-#
-#
-#find_package(Bullet REQUIRED)
+set(PUJ_Ogre_Plugins "" CACHE STRING "")
+foreach(_plg ${OGRE_PLUGINS})
+  string(
+    CONCAT PUJ_Ogre_Plugins
+    "${PUJ_Ogre_Plugins}" "${OGRE_PLUGIN_DIR}/${_plg}|"
+    )
+endforeach()
+file(GLOB _plgs ${PROJECT_SOURCE_DIR}/plugins/*)
+foreach(_plg ${_plgs})
+  if(IS_DIRECTORY ${_plg})
+    string(
+      REPLACE
+      "${PROJECT_SOURCE_DIR}/plugins/" "Plugin_PUJ_Ogre_"
+      _plg ${_plg}
+      )
+    string(
+      CONCAT PUJ_Ogre_Plugins
+      "${PUJ_Ogre_Plugins}" "${_plg}|"
+      )
+  endif()
+endforeach()
 
 # -- Targets
-subdirs(apps bash lib)
+subdirs(bash plugins lib)
 
 ## eof - CMakeLists.txt

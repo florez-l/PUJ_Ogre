@@ -1,0 +1,13 @@
+<scenexx formatVersion="0.0" physics="on">
+  <nodes>
+    <node name="sphere">
+      <entity>
+        <parametric2 urange="0 2*pi open" vrange="0 pi closed" sampling="8 8">
+          <x function="cos(u)sin(v)"/>
+          <y function="sin(u)sin(v)"/>
+          <z function="cos(v)"/>
+        </parametric2>
+      </entity>
+    </node>
+  </nodes>
+</scenexx>

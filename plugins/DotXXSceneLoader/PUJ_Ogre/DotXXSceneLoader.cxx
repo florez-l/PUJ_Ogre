@@ -20,34 +20,6 @@
 #include <Ogre.h>
 #include <pugixml.hpp>
 
-namespace
-{
-  Ogre::String getAttrib(const pugi::xml_node& XMLNode, const Ogre::String& attrib, const Ogre::String& defaultValue = "")
-  {
-    if( auto anode = XMLNode.attribute( attrib.c_str( ) ) )
-      return( anode.value( ) );
-    else
-      return( defaultValue );
-  }
-
-  Ogre::Real getAttribReal(const pugi::xml_node& XMLNode, const Ogre::String& attrib, Ogre::Real defaultValue = 0 )
-  {
-    if( auto anode = XMLNode.attribute( attrib.c_str( ) ) )
-      return( Ogre::StringConverter::parseReal( anode.value( ) ) );
-    else
-      return( defaultValue );
-  }
-
-  bool getAttribBool( const pugi::xml_node& XMLNode, const Ogre::String& attrib, bool defaultValue = false )
-  {
-    if( auto anode = XMLNode.attribute( attrib.c_str( ) ) )
-      return( anode.as_bool( ) );
-    else
-      return( defaultValue );
-  }
-}
-
-
 // -------------------------------------------------------------------------
 PUJ_Ogre::DotXXSceneLoader::
 DotXXSceneLoader( )
@@ -126,8 +98,8 @@ void PUJ_Ogre::DotXXSceneLoader::
 _process( pugi::xml_node& XMLRoot )
 {
   // Process the scene parameters
-  Ogre::String version = getAttrib( XMLRoot, "formatVersion", "unknown" );
-  Ogre::String physics = getAttrib( XMLRoot, "physics", "off" );
+  Ogre::String version = Self::_attrib( XMLRoot, "formatVersion", "unknown" );
+  Ogre::String physics = Self::_attrib( XMLRoot, "physics", "off" );
   Ogre::String message = "[DotXXSceneLoader] Parsing dotScene++ file with version " + version + " (physics=" + physics + ").";
   if( XMLRoot.attribute("sceneManager" ) )
     message += ", scene manager " + Ogre::String( XMLRoot.attribute("sceneManager" ).value( ) );
@@ -146,7 +118,7 @@ _nodes( pugi::xml_node& XMLNode )
 {
   for( auto child: XMLNode.children( "node" ) )
   {
-    Ogre::String name = getAttrib( child, "name");
+    Ogre::String name = Self::_attrib( child, "name");
     auto entity = child.child( "entity" );
     if( !entity )
     {
@@ -160,11 +132,51 @@ _nodes( pugi::xml_node& XMLNode )
           );
     } // end if
 
-    Ogre::String material = getAttrib( entity, "material", "default" );
+    Ogre::String material = Self::_attrib( entity, "material", "default" );
     if( auto parametric2 = entity.child( "parametric2" ) )
       this->_parametric2( parametric2, name, material );
   } // end for
 }
+
+// -------------------------------------------------------------------------
+Ogre::String PUJ_Ogre::DotXXSceneLoader::
+_attrib(
+  const pugi::xml_node& XMLNode, const Ogre::String& attrib,
+  const Ogre::String& defaultValue
+  )
+{
+  if( auto anode = XMLNode.attribute( attrib.c_str( ) ) )
+    return( anode.value( ) );
+  else
+    return( defaultValue );
+}
+
+// -------------------------------------------------------------------------
+Ogre::Real PUJ_Ogre::DotXXSceneLoader::
+_real(
+  const pugi::xml_node& XMLNode, const Ogre::String& attrib,
+  Ogre::Real defaultValue
+  )
+{
+  if( auto anode = XMLNode.attribute( attrib.c_str( ) ) )
+    return( Ogre::StringConverter::parseReal( anode.value( ) ) );
+  else
+    return( defaultValue );
+}
+
+// -------------------------------------------------------------------------
+bool PUJ_Ogre::DotXXSceneLoader::
+_bool(
+  const pugi::xml_node& XMLNode, const Ogre::String& attrib,
+  bool defaultValue
+  )
+{
+  if( auto anode = XMLNode.attribute( attrib.c_str( ) ) )
+    return( anode.as_bool( ) );
+  else
+    return( defaultValue );
+}
+
 
 /* TODO
    protected:

@@ -28,6 +28,9 @@ namespace PUJ_Ogre
   class Plugin_PUJ_Ogre_DotXXSceneLoader_EXPORT DotXXSceneLoader
   {
   public:
+    using Self = DotXXSceneLoader;
+
+  public:
     DotXXSceneLoader( );
     virtual ~DotXXSceneLoader( );
 
@@ -50,6 +53,20 @@ namespace PUJ_Ogre
       pugi::xml_node& XMLNode,
       const Ogre::String& name,
       const Ogre::String& material
+      );
+
+    // XML-related helpers
+    static Ogre::String _attrib(
+      const pugi::xml_node& XMLNode, const Ogre::String& attrib,
+      const Ogre::String& defaultValue = ""
+      );
+    static Ogre::Real _real(
+      const pugi::xml_node& XMLNode, const Ogre::String& attrib,
+      Ogre::Real defaultValue = 0
+      );
+    static bool _bool(
+      const pugi::xml_node& XMLNode, const Ogre::String& attrib,
+      bool defaultValue = false
       );
     
     /* TODO

@@ -21,34 +21,6 @@
 #include <Ogre.h>
 #include <pugixml.hpp>
 
-namespace
-{
-  Ogre::String getAttrib(const pugi::xml_node& XMLNode, const Ogre::String& attrib, const Ogre::String& defaultValue = "" )
-  {
-    if( auto anode = XMLNode.attribute( attrib.c_str( ) ) )
-      return( anode.value( ) );
-    else
-      return( defaultValue );
-  }
-
-  Ogre::Real getAttribReal(const pugi::xml_node& XMLNode, const Ogre::String& attrib, Ogre::Real defaultValue = 0 )
-  {
-    if( auto anode = XMLNode.attribute( attrib.c_str( ) ) )
-      return( Ogre::StringConverter::parseReal( anode.value( ) ) );
-    else
-      return( defaultValue );
-  }
-
-  bool getAttribBool( const pugi::xml_node& XMLNode, const Ogre::String& attrib, bool defaultValue = false )
-  {
-    if( auto anode = XMLNode.attribute( attrib.c_str( ) ) )
-      return( anode.as_bool( ) );
-    else
-      return( defaultValue );
-  }
-}
-
-
 // -------------------------------------------------------------------------
 void PUJ_Ogre::DotXXSceneLoader::
 _parametric2(
@@ -57,15 +29,15 @@ _parametric2(
   const Ogre::String& material
   )
 {
-  Ogre::String urange = getAttrib( XMLNode, "urange", "0 0 open" );
-  Ogre::String vrange = getAttrib( XMLNode, "vrange", "0 0 open" );
-  Ogre::String sampling = getAttrib( XMLNode, "sampling", "0 0" );
+  Ogre::String urange = Self::_attrib( XMLNode, "urange", "0 0 open" );
+  Ogre::String vrange = Self::_attrib( XMLNode, "vrange", "0 0 open" );
+  Ogre::String sampling = Self::_attrib( XMLNode, "sampling", "0 0" );
   auto x = XMLNode.child( "x" );
   auto y = XMLNode.child( "y" );
   auto z = XMLNode.child( "z" );
-  Ogre::String xf = getAttrib( x, "function", "0" );
-  Ogre::String yf = getAttrib( y, "function", "0" );
-  Ogre::String zf = getAttrib( z, "function", "0" );
+  Ogre::String xf = Self::_attrib( x, "function", "0" );
+  Ogre::String yf = Self::_attrib( y, "function", "0" );
+  Ogre::String zf = Self::_attrib( z, "function", "0" );
 
   std::string Lu, Uu, Ou, Lv, Uv, Ov;
   unsigned long long Nu, Nv;

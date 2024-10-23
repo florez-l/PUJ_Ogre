@@ -14,7 +14,9 @@
 
 #include <OgreApplicationContext.h>
 
+
 #include <Ogre.h>
+#include <OgreCameraMan.h>
 #include <OgreOverlaySystem.h>
 #include <PUJ_Ogre/Config.h>
 
@@ -76,17 +78,10 @@ namespace PUJ_Ogre
     virtual void setup( ) override
       {
         this->_initSceneManager( );
-
-        // Create a default material
-        Ogre::MaterialPtr material = Ogre::MaterialManager::getSingleton( ).create( "default", "General" );
-        material->getTechnique( 0 )->getPass( 0 )->setCullingMode( Ogre::CULL_NONE );
-        material->getTechnique( 0 )->getPass( 0 )->setAmbient( 1, 1, 1 );
-        material->getTechnique( 0 )->getPass( 0 )->setDiffuse( 1, 1, 1, 1 );
-        material->getTechnique( 0 )->getPass( 0 )->setPolygonMode( Ogre::PM_WIREFRAME );
-
         this->_loadScene( );
         this->setWindowGrab( true );
       }
+
     virtual void createRoot( ) override
       {
 #if OGRE_PLATFORM == OGRE_PLATFORM_ANDROID
@@ -192,6 +187,16 @@ namespace PUJ_Ogre
       {
         auto* root = this->m_SceneMgr->getRootSceneNode( );
         root->loadChildren( "sphere.scenexx" );
+
+        auto* cam = this->m_SceneMgr->getCameras( ).begin( )->second;
+        if( cam != nullptr )
+        {
+          this->getRenderWindow( )->addViewport( cam );
+
+          auto* camman = new OgreBites::CameraMan( cam->getParentSceneNode( ) );
+          camman->setStyle( OgreBites::CS_ORBIT );
+          this->addInputListener( camman );
+        } // end if
       }
 
   protected:

@@ -2,21 +2,11 @@
 // @author Leonardo Florez-Valencia (florez-l@javeriana.edu.co)
 // =========================================================================
 
+
 #include <iostream>
 
 
-
-
-
-
-
-
-
-
-
-
 #include <PUJ_Ogre/DotXXSceneLoader.h>
-
 #include <Ogre.h>
 #include <pugixml.hpp>
 
@@ -100,9 +90,19 @@ _process( pugi::xml_node& XMLRoot )
   // Process the scene parameters
   Ogre::String version = Self::_attrib( XMLRoot, "formatVersion", "unknown" );
   Ogre::String physics = Self::_attrib( XMLRoot, "physics", "off" );
-  Ogre::String message = "[DotXXSceneLoader] Parsing dotScene++ file with version " + version + " (physics=" + physics + ").";
+  Ogre::String message
+    =
+    "[DotXXSceneLoader] Parsing dotScene++ file with version "
+    +
+    version
+    +
+    " (physics=" + physics + ").";
   if( XMLRoot.attribute("sceneManager" ) )
-    message += ", scene manager " + Ogre::String( XMLRoot.attribute("sceneManager" ).value( ) );
+    message
+      +=
+      ", scene manager "
+      +
+      Ogre::String( XMLRoot.attribute("sceneManager" ).value( ) );
   if( XMLRoot.attribute( "author" ) )
     message += ", author " + Ogre::String( XMLRoot.attribute( "author" ).value( ) );
   Ogre::LogManager::getSingleton( ).logMessage( message );
@@ -124,79 +124,186 @@ _process( pugi::xml_node& XMLRoot )
 void PUJ_Ogre::DotXXSceneLoader::
 _nodes( pugi::xml_node& XMLNode )
 {
-  for( auto child: XMLNode.children( "node" ) )
+  for( auto e: XMLNode.children( "node" ) )
   {
-    Ogre::String name = Self::_attrib( child, "name");
-    auto entity = child.child( "entity" );
-    if( !entity )
-    {
-      Ogre::LogManager::getSingleton( )
-        .logError(
-          "DotXXSceneLoader - No entity defined for node \""
-          +
-          name
-          +
-          "\""
-          );
-    } // end if
+    this->_node( e );
 
-    Ogre::String material = Self::_attrib( entity, "material", "default" );
-    if( auto parametric2 = entity.child( "parametric2" ) )
-      this->_parametric2( parametric2, name, material );
+    /* TODO
+       auto entity = child.child( "entity" );
+       if( !entity )
+       {
+       Ogre::LogManager::getSingleton( )
+       .logError(
+       "DotXXSceneLoader - No entity defined for node \""
+       +
+       name
+       +
+       "\""
+       );
+       } // end if
+    */
+
   } // end for
+
+  /* TODO
+    // Process position (?)
+    if (auto pElement = XMLNode.child("position"))
+    {
+        mAttachNode->setPosition(parseVector3(pElement));
+        mAttachNode->setInitialState();
+    }
+
+    // Process rotation (?)
+    if (auto pElement = XMLNode.child("rotation"))
+    {
+        mAttachNode->setOrientation(parseQuaternion(pElement));
+        mAttachNode->setInitialState();
+    }
+
+    // Process scale (?)
+    if (auto pElement = XMLNode.child("scale"))
+    {
+        mAttachNode->setScale(parseVector3(pElement));
+        mAttachNode->setInitialState();
+    }
+  */
+
 }
 
 // -------------------------------------------------------------------------
 void PUJ_Ogre::DotXXSceneLoader::
-_camera( pugi::xml_node& XMLNode, Ogre::SceneNode* parent )
+_node( pugi::xml_node& XMLNode, Ogre::SceneNode* p )
 {
   Ogre::String name = Self::_attrib( XMLNode, "name" );
-  Ogre::Real fov = Self::_real( XMLNode, "fov", 45 );
-  Ogre::Real ar = Self::_real( XMLNode, "aspectRatio", 1.3333 );
+
+  Ogre::SceneNode* n;
+  if( p != 0 )
+    n = p->createChildSceneNode( name );
+  else
+    n = this->m_AttachNode->createChildSceneNode( name );
+
+  // Process transformations
+  Ogre::Vector3 pos( 0, 0, 0 ), scale( 1, 1, 1 ), lookAt( 0, 0, 0 );
+  Ogre::Quaternion rot( 0, 0, 0, 1 );
+  if( auto e = XMLNode.child( "position" ) )
+    pos = Self::_vector( e, "point", pos );
+  if( auto e = XMLNode.child( "scale" ) )
+    scale = Self::_vector( e, "scale", scale );
+  if( auto e = XMLNode.child( "lookAt" ) )
+    lookAt = Self::_vector( e, "point", lookAt );
+  if( auto e = XMLNode.child( "orientation" ) )
+    rot = Self::_quaternion( e, "orientation", rot );
+  n->setPosition( pos );
+  n->setScale( scale );
+  n->setOrientation( rot );
+  n->lookAt( lookAt, Ogre::Node::TransformSpace::TS_WORLD );
+
+  /* TODO
+     if (auto pElement = XMLNode.child("lookTarget"))
+     processLookTarget(pElement, pNode);
+     if (auto pElement = XMLNode.child("trackTarget"))
+     processTrackTarget(pElement, pNode);
+  */
+
+  // Process children
+  for( auto e: XMLNode.children( "node" ) )   this->_node( e, n );
+  for( auto e: XMLNode.children( "entity" ) ) this->_entity( e, n );
+  for( auto e: XMLNode.children( "camera" ) ) this->_camera( e, n );
+  for( auto e: XMLNode.children( "light" ) )  this->_light( e, n );
+}
+
+// -------------------------------------------------------------------------
+void PUJ_Ogre::DotXXSceneLoader::
+_entity( pugi::xml_node& XMLNode, Ogre::SceneNode* p )
+{
+  if( auto e = XMLNode.child( "parametric2" ) )
+    this->_parametric2( e, p );
+}
+
+// -------------------------------------------------------------------------
+void PUJ_Ogre::DotXXSceneLoader::
+_camera( pugi::xml_node& XMLNode, Ogre::SceneNode* p )
+{
+  Ogre::Degree fov = Ogre::Degree( Self::_real( XMLNode, "fovy", 45 ) );
   Ogre::String proj
     =
     Self::_attrib( XMLNode, "projectionType", "perspective" );
 
-  // Create the camera
-  Ogre::Camera* cam = this->m_SceneMgr->createCamera( name );
+  // Node
+  Ogre::SceneNode* n = p;
+  if( n == 0 )
+    n = this->m_AttachNode->createChildSceneNode( "unnamed_camera" );
 
-  // construct a scenenode is no parent
-  if( parent == 0 )
-    parent = this->m_AttachNode->createChildSceneNode( name );
-  parent->attachObject( cam );
+  // Create the camera
+  Ogre::Camera* cam
+    =
+    this->m_SceneMgr->createCamera( n->getName( ) + "_camera" );
+  n->attachObject( cam );
 
   // Set parameters
-  cam->setFOVy( Ogre::Degree( fov ) );
-  cam->setAspectRatio( ar );
+  cam->setFOVy( fov );
+  cam->setAutoAspectRatio( true );
   if( proj == "perspective" )
     cam->setProjectionType( Ogre::PT_PERSPECTIVE );
   else if( proj == "orthographic" )
     cam->setProjectionType( Ogre::PT_ORTHOGRAPHIC );
-
-  // Process clipping
   if( auto e = XMLNode.child( "clipping" ) )
   {
     cam->setNearClipDistance( Self::_real( e, "near" ) );
     cam->setFarClipDistance( Self::_real( e, "far" ) );
   } // end if
+}
 
-  // Create camera node
-  Ogre::Vector3 pos( 0, 0, 0 ), lookAt( 0, 0, 0 ), up( 0, 1, 0 );
-  if( auto e = XMLNode.child( "position" ) )
-    pos = Self::_vector( e, "point", pos );
-  if( auto e = XMLNode.child( "lookAt" ) )
-    lookAt = Self::_vector( e, "point", lookAt );
-  if( auto e = XMLNode.child( "up" ) )
-    up = Self::_vector( e, "point", up );
+// -------------------------------------------------------------------------
+void PUJ_Ogre::DotXXSceneLoader::
+_light( pugi::xml_node& XMLNode, Ogre::SceneNode* p )
+{
+  // Node
+  Ogre::SceneNode* n = p;
+  if( n == 0 )
+    n = this->m_AttachNode->createChildSceneNode( "unnamed_light" );
 
-  lookAt.normalise( );
-  up.normalise( );
-  lookAt = -lookAt;
-  parent->setPosition( pos );
-  parent->setInitialState( );
-  parent->setOrientation(
-    Ogre::Quaternion( lookAt.crossProduct( up ), up, lookAt )
-    );
+  // Create the light
+  Ogre::Light* l = this->m_SceneMgr->createLight( n->getName( ) + "_light" );
+  n->attachObject( l );
+
+  // Parameters
+  Ogre::String s = Self::_attrib( XMLNode, "type", "point" );
+  if      ( s == "point" )       l->setType( Ogre::Light::LT_POINT );
+  else if ( s == "directional" ) l->setType( Ogre::Light::LT_DIRECTIONAL );
+  else if ( s == "spot" )        l->setType( Ogre::Light::LT_SPOTLIGHT );
+  else if ( s == "radPoint" )    l->setType( Ogre::Light::LT_POINT );
+  else if ( s == "rect" )        l->setType( Ogre::Light::LT_RECTLIGHT );
+  l->setVisible( Self::_bool( XMLNode, "visible", true ) );
+  l->setCastShadows( Self::_bool( XMLNode, "castShadows", true ) );
+  l->setPowerScale( Self::_real( XMLNode, "powerScale", 1 ) );
+
+  // Colours
+  if( auto e = XMLNode.child( "diffuse" ) )
+    l->setDiffuseColour( Self::_colour( e, "colour" ) );
+  if( auto e = XMLNode.child( "specular" ) )
+    l->setSpecularColour( Self::_colour( e, "colour" ) );
+
+  /* TODO
+     if (s != "directional")
+     {
+     // Process lightRange (?)
+     if (auto pElement = XMLNode.child("lightRange"))
+     processLightRange(pElement, l);
+
+     // Process lightAttenuation (?)
+     if (auto pElement = XMLNode.child("lightAttenuation"))
+     processLightAttenuation(pElement, l);
+     }
+  */
+  /* TODO
+     if (s == "rect")
+     {
+     // Process lightSourceSize (?)
+     if (auto pElement = XMLNode.child("lightSourceSize"))
+     processLightSourceSize(pElement, l);
+     }
+  */
 }
 
 // -------------------------------------------------------------------------
@@ -272,47 +379,22 @@ _vector(
     return( defaultValue );
 }
 
-
-/* TODO
-   protected:
-   void writeNode( pugi::xml_node& parentXML, const SceneNode* node );
-   void processScene( pugi::xml_node& XMLRoot );
-
-       void processNodes( pugi::xml_node& XMLNode );
-       void processExternals( pugi::xml_node& XMLNode );
-       void processEnvironment( pugi::xml_node& XMLNode );
-       void processTerrainGroup( pugi::xml_node& XMLNode );
-       void processBlendmaps( pugi::xml_node& XMLNode );
-       void processUserData( pugi::xml_node& XMLNode, Ogre::UserObjectBindings& userData );
-       void processLight( pugi::xml_node& XMLNode, Ogre::SceneNode* parent = 0 );
-       void processCamera( pugi::xml_node& XMLNode, Ogre::SceneNode* parent = 0 );
-
-       void processNode( pugi::xml_node& XMLNode, Ogre::SceneNode* parent = 0 );
-       void processLookTarget( pugi::xml_node& XMLNode, Ogre::SceneNode* parent );
-       void processTrackTarget( pugi::xml_node& XMLNode, Ogre::SceneNode* parent );
-       void processEntity( pugi::xml_node& XMLNode, Ogre::SceneNode* parent );
-       void processParticleSystem( pugi::xml_node& XMLNode, Ogre::SceneNode* parent );
-       void processBillboardSet( pugi::xml_node& XMLNode, Ogre::SceneNode* parent );
-       void processPlane( pugi::xml_node& XMLNode, Ogre::SceneNode* parent );
-       void processNodeAnimations( pugi::xml_node& XMLNode, Ogre::SceneNode* parent );
-       void processNodeAnimation( pugi::xml_node& XMLNode, Ogre::SceneNode* parent );
-       void processKeyframe( pugi::xml_node& XMLNode, Ogre::NodeAnimationTrack* pTrack );
-
-       void processFog( pugi::xml_node& XMLNode );
-       void processSkyBox( pugi::xml_node& XMLNode );
-       void processSkyDome( pugi::xml_node& XMLNode );
-       void processSkyPlane( pugi::xml_node& XMLNode );
-
-       void processLightRange( pugi::xml_node& XMLNode, Ogre::Light* pLight );
-       void processLightAttenuation( pugi::xml_node& XMLNode, Ogre::Light* pLight );
-       void processLightSourceSize( pugi::xml_node& XMLNode, Ogre::Light* pLight );
-  protected:
-    Ogre::SceneManager* this->m_SceneMgr;
-    Ogre::SceneNode* this->m_AttachNode;
-    Ogre::String m_sGroupName;
-    Ogre::ColourValue mBackgroundColour;
-  };
-*/
+// -------------------------------------------------------------------------
+Ogre::Quaternion PUJ_Ogre::DotXXSceneLoader::
+_quaternion(
+  const pugi::xml_node& XMLNode, const Ogre::String& attrib,
+  const Ogre::Quaternion& defaultValue
+  )
+{
+  if( auto anode = XMLNode.attribute( attrib.c_str( ) ) )
+  {
+    float w, x, y, z;
+    std::istringstream( anode.value( ) ) >> w >> x >> y >> z;
+    return( Ogre::Quaternion( w, x, y, z ) );
+  }
+  else
+    return( defaultValue );
+}
 
 // -------------------------------------------------------------------------
 const Ogre::String& PUJ_Ogre::DotXXScenePlugin::

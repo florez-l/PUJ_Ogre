@@ -1,0 +1,23 @@
+material default
+{
+  transparency_casts_shadows on
+  receive_shadows on
+  technique
+  {
+    pass solidPass
+    {
+      // sets your object's colour, texture etc.
+      lighting on
+
+      cull_hardware none
+      cull_software none
+
+      ambient 0.3 0.1 0.5 0.5
+      diffuse 0.8 0.05 0.05 1
+      emissive 1 0 0 1
+      // ... leave what you have here
+
+      polygon_mode solid // sets to render the object as a solid
+    }
+  }
+}

@@ -15,12 +15,9 @@
 
 // -------------------------------------------------------------------------
 void PUJ_Ogre::DotXXSceneLoader::
-_parametric2(
-  pugi::xml_node& XMLNode,
-  const Ogre::String& name,
-  const Ogre::String& material
-  )
+_parametric2( pugi::xml_node& XMLNode, Ogre::SceneNode* p )
 {
+  Ogre::String material = Self::_attrib( XMLNode, "material" );
   Ogre::String urange = Self::_attrib( XMLNode, "urange", "0 0 open" );
   Ogre::String vrange = Self::_attrib( XMLNode, "vrange", "0 0 open" );
   Ogre::String sampling = Self::_attrib( XMLNode, "sampling", "0 0" );
@@ -33,6 +30,11 @@ _parametric2(
 
   unsigned int usamples, vsamples;
   std::istringstream( sampling ) >> usamples >> vsamples;
+
+  // Node
+  Ogre::SceneNode* n = p;
+  if( n == 0 )
+    n = this->m_AttachNode->createChildSceneNode( "unnamed_parametric2" );
 
   // Create model
   vtkNew< PUJ_Ogre::ParametricFunction > model;
@@ -71,7 +73,7 @@ _parametric2(
 
   Ogre::ManualObject* man
     =
-    this->m_SceneMgr->createManualObject( name + "_entity" );
+    this->m_SceneMgr->createManualObject( n->getName( ) + "_parametric2" );
   man->begin( material, Ogre::RenderOperation::OT_TRIANGLE_LIST );
   man->estimateVertexCount( points->GetNumberOfPoints( ) );
   man->estimateIndexCount( polys->GetNumberOfCells( ) * 3 );
@@ -81,21 +83,11 @@ _parametric2(
     double* p = points->GetPoint( i );
     double* n = normals->GetTuple( i );
 
-    /* TODO
-       std::cout
-       << i
-       << " ---> "
-       << p[ 0 ] << " " << p[ 1 ] << " " << p[ 2 ]
-       << " : "
-       << n[ 0 ] << " " << n[ 1 ] << " " << n[ 2 ]
-       << std::endl;
-    */
-
     man->position( p[ 0 ], p[ 1 ], p[ 2 ] );
     man->normal( n[ 0 ], n[ 1 ], n[ 2 ] );
     man->textureCoord( 0, 0 ); // TODO
   } // end for
-  
+
   vtkNew< vtkIdList > ids;
   polys->InitTraversal( );
   for( unsigned long long i = 0; i < polys->GetNumberOfCells( ); ++i )
@@ -110,6 +102,7 @@ _parametric2(
   } // end for
 
   man->end( );
+  n->attachObject( man );
 }
 
 // eof - $RCSfile$

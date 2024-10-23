@@ -1,20 +1,33 @@
 <scenexx formatVersion="0.0" physics="on">
-  <ambientLight colour="1 0 0 1"/>
+  <ambientLight colour="1 1 1 1"/>
   <nodes>
     <node name="sphere">
       <entity>
-        <parametric2 urange="0 2pi closed" vrange="0 pi open" sampling="5 5">
+        <parametric2
+           material="default"
+           urange="0 2pi closed"
+           vrange="0 pi open"
+           sampling="20 20"
+           >
           <x function="cos(u)sin(v)"/>
           <y function="sin(u)sin(v)"/>
           <z function="cos(v)"/>
         </parametric2>
       </entity>
     </node>
+    <node name="myLight">
+      <light>
+        <diffuse  colour="0 1 0 1"/>
+        <specular colour="0 0 1 1"/>
+      </light>
+      <position point="2 2 2"/>
+    </node>
+    <node name="myCamera">
+      <camera>
+        <clipping near="1e-3" far="100"/>
+      </camera>
+      <position point="3 3 3"/>
+      <lookAt   point="0 0 0"/>
+    </node>
   </nodes>
-  <camera name="myCamera">
-    <clipping near="1e-3" far="100"/>
-    <position point="2 2 2"/>
-    <lookAt   point="0 0 0"/>
-    <up       point="0 1 0"/>
-  </camera>
 </scenexx>

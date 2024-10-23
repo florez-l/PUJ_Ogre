@@ -49,14 +49,12 @@ namespace PUJ_Ogre
   protected:
     void _process( pugi::xml_node& XMLRoot );
     void _nodes( pugi::xml_node& XMLNode );
-    void _camera( pugi::xml_node& XMLNode, Ogre::SceneNode* parent = 0 );
+    void _node( pugi::xml_node& XMLNode, Ogre::SceneNode* p = 0 );
+    void _entity( pugi::xml_node& XMLNode, Ogre::SceneNode* p = 0 );
+    void _camera( pugi::xml_node& XMLNode, Ogre::SceneNode* p = 0 );
+    void _light( pugi::xml_node& XMLNode,  Ogre::SceneNode* p = 0 );
 
-    void _parametric2(
-      pugi::xml_node& XMLNode,
-      const Ogre::String& name,
-      const Ogre::String& material
-      );
-
+    void _parametric2( pugi::xml_node& XMLNode, Ogre::SceneNode* p = 0 );
 
     // XML-related helpers
     static Ogre::String _attrib(
@@ -73,11 +71,15 @@ namespace PUJ_Ogre
       );
     static Ogre::ColourValue _colour(
       const pugi::xml_node& XMLNode, const Ogre::String& attrib,
-      const Ogre::ColourValue& defaultValue = Ogre::ColourValue( 1, 1, 1, 1 )
+      const Ogre::ColourValue& defaultValue = Ogre::ColourValue( )
       );
     static Ogre::Vector3 _vector(
       const pugi::xml_node& XMLNode, const Ogre::String& attrib,
       const Ogre::Vector3& defaultValue = Ogre::Vector3( 0, 0, 0 )
+      );
+    static Ogre::Quaternion _quaternion(
+      const pugi::xml_node& XMLNode, const Ogre::String& attrib,
+      const Ogre::Quaternion& defaultValue = Ogre::Quaternion( 0, 0, 0, 1 )
       );
     
     /* TODO

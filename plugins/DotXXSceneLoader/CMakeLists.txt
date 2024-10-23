@@ -33,6 +33,7 @@ include_directories(
 add_library(
   Plugin_PUJ_Ogre_DotXXSceneLoader
   SHARED
+  PUJ_Ogre/ParametricFunction.cxx PUJ_Ogre/ParametricFunction.h
   PUJ_Ogre/DotXXSceneLoader.cxx PUJ_Ogre/DotXXSceneLoader.h
   PUJ_Ogre/DotXXSceneLoader_parametric2.cxx
   )
@@ -43,7 +44,7 @@ generate_export_header(
   )
 target_link_libraries(
   Plugin_PUJ_Ogre_DotXXSceneLoader
-  PUBLIC OgreMain
+  PUBLIC OgreMain ${VTK_LIBRARIES}
   PRIVATE pugixml
   )
 #ogre_config_framework(Plugin_PUJ_Ogre_DotXXSceneLoader)

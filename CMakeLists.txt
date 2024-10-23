@@ -39,7 +39,9 @@ include(GenerateExportHeader)
 
 # -- Packages
 find_package(OGRE REQUIRED)
+find_package(VTK REQUIRED)
 
+# -- Ogre Plugins
 set(PUJ_Ogre_Plugins "" CACHE STRING "")
 foreach(_plg ${OGRE_PLUGINS})
   string(

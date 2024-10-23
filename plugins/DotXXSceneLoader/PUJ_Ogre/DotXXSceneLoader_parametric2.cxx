@@ -2,21 +2,13 @@
 // @author Leonardo Florez-Valencia (florez-l@javeriana.edu.co)
 // =========================================================================
 
-#include <iostream>
-
-
-
-
-
-
-
-
-
-
-
-
 #include <PUJ_Ogre/DotXXSceneLoader.h>
-#include <PUJ_Ogre/exprtk.h>
+#include <PUJ_Ogre/ParametricFunction.h>
+#include <vtkFloatArray.h>
+#include <vtkParametricFunctionSource.h>
+#include <vtkPointData.h>
+#include <vtkPolyDataNormals.h>
+#include <vtkNew.h>
 
 #include <Ogre.h>
 #include <pugixml.hpp>
@@ -32,81 +24,89 @@ _parametric2(
   Ogre::String urange = Self::_attrib( XMLNode, "urange", "0 0 open" );
   Ogre::String vrange = Self::_attrib( XMLNode, "vrange", "0 0 open" );
   Ogre::String sampling = Self::_attrib( XMLNode, "sampling", "0 0" );
-  auto x = XMLNode.child( "x" );
-  auto y = XMLNode.child( "y" );
-  auto z = XMLNode.child( "z" );
-  Ogre::String xf = Self::_attrib( x, "function", "0" );
-  Ogre::String yf = Self::_attrib( y, "function", "0" );
-  Ogre::String zf = Self::_attrib( z, "function", "0" );
+  Ogre::String x = Self::_attrib( XMLNode.child( "x" ), "function", "0" );
+  Ogre::String y = Self::_attrib( XMLNode.child( "y" ), "function", "0" );
+  Ogre::String z = Self::_attrib( XMLNode.child( "z" ), "function", "0" );
 
-  std::string Lu, Uu, Ou, Lv, Uv, Ov;
-  unsigned long long Nu, Nv;
-  std::istringstream( urange ) >> Lu >> Uu >> Ou;
-  std::istringstream( vrange ) >> Lv >> Uv >> Ov;
-  std::istringstream( sampling ) >> Nu >> Nv;
+  std::stringstream params;
+  params << urange << " " << vrange;
 
-  typedef exprtk::symbol_table<float> symbol_table_t;
-  typedef exprtk::expression<float>   expression_t;
-  typedef exprtk::parser<float>       parser_t;
+  unsigned int usamples, vsamples;
+  std::istringstream( sampling ) >> usamples >> vsamples;
 
-  float u, v;
-  symbol_table_t symbol_table;
-  symbol_table.add_variable( "u", u );
-  symbol_table.add_variable( "v", v );
-  symbol_table.add_constants( );
+  // Create model
+  vtkNew< PUJ_Ogre::ParametricFunction > model;
+  model->SetParameters( params.str( ).c_str( ) );
+  model->SetXExpression( x.c_str( ) );
+  model->SetYExpression( y.c_str( ) );
+  model->SetZExpression( z.c_str( ) );
 
-  expression_t xe, ye, ze, Lue, Uue, Lve, Uve;
-  xe.register_symbol_table( symbol_table );
-  ye.register_symbol_table( symbol_table );
-  ze.register_symbol_table( symbol_table );
-  Lue.register_symbol_table( symbol_table );
-  Uue.register_symbol_table( symbol_table );
-  Lve.register_symbol_table( symbol_table );
-  Uve.register_symbol_table( symbol_table );
+  // A dummy evaluation to update ranges and openness
+  double uvw[ 3 ] = { 0 };
+  double Pt[ 3 ] = { 0 };
+  double Duvw[ 9 ] = { 0 };
+  model->Evaluate( uvw, Pt, Duvw );
 
-  parser_t xp, yp, zp, Lup, Uup, Lvp, Uvp;
-  xp.compile( xf, xe );
-  yp.compile( yf, ye );
-  zp.compile( zf, ze );
-  Lup.compile( Lu, Lue );
-  Uup.compile( Uu, Uue );
-  Lvp.compile( Lv, Lve );
-  Uvp.compile( Uv, Uve );
+  // Sample the model
+  vtkNew< vtkParametricFunctionSource > src;
+  src->SetParametricFunction( model );
+  src->SetUResolution( usamples );
+  src->SetVResolution( vsamples );
+  src->SetWResolution( 1 );
 
-  float Lu_ = Lue.value( );
-  float Uu_ = Uue.value( );
-  float Lv_ = Lve.value( );
-  float Uv_ = Uve.value( );
+  vtkNew< vtkPolyDataNormals > normalFilter;
+  normalFilter->SetInputConnection( src->GetOutputPort( ) );
+  normalFilter->ComputePointNormalsOn( );
+  normalFilter->ComputeCellNormalsOff( );
+  normalFilter->Update( );
+
+  // Create manual object
+  auto points = normalFilter->GetOutput( )->GetPoints( );
+  auto normals
+    =
+    vtkArrayDownCast< vtkFloatArray >(
+      normalFilter->GetOutput( )->GetPointData( )->GetNormals( )
+      );
+  auto polys = normalFilter->GetOutput( )->GetPolys( );
 
   Ogre::ManualObject* man
     =
     this->m_SceneMgr->createManualObject( name + "_entity" );
   man->begin( material, Ogre::RenderOperation::OT_TRIANGLE_LIST );
+  man->estimateVertexCount( points->GetNumberOfPoints( ) );
+  man->estimateIndexCount( polys->GetNumberOfCells( ) * 3 );
 
-  for( unsigned long long su = 0; su < Nu; ++su )
+  for( unsigned long long i = 0; i < points->GetNumberOfPoints( ); ++i )
   {
-    u = ( ( Uu_ - Lu_ ) * float( su ) / float( Nu ) ) + Lu_;
-    for( unsigned long long sv = 0; sv < Nv; ++sv )
-    {
-      v = ( ( Uv_ - Lv_ ) * float( sv ) / float( Nv ) ) + Lv_;
-      float px = xe.value( );
-      float py = ye.value( );
-      float pz = ze.value( );
+    double* p = points->GetPoint( i );
+    double* n = normals->GetTuple( i );
 
-      man->position( px, py, pz );
-      man->normal( px, py, pz );
-      man->textureCoord( u, v );
-    } // end for
+    /* TODO
+       std::cout
+       << i
+       << " ---> "
+       << p[ 0 ] << " " << p[ 1 ] << " " << p[ 2 ]
+       << " : "
+       << n[ 0 ] << " " << n[ 1 ] << " " << n[ 2 ]
+       << std::endl;
+    */
+
+    man->position( p[ 0 ], p[ 1 ], p[ 2 ] );
+    man->normal( n[ 0 ], n[ 1 ], n[ 2 ] );
+    man->textureCoord( 0, 0 ); // TODO
   } // end for
-
-  unsigned long long idx = 0;
-  for( unsigned long long su = 0; su < Nu; ++su )
+  
+  vtkNew< vtkIdList > ids;
+  polys->InitTraversal( );
+  for( unsigned long long i = 0; i < polys->GetNumberOfCells( ); ++i )
   {
-    for( unsigned long long sv = 0; sv < Nv; ++sv )
-    {
-      // TODO: man->triangle( i, j, k );
-      idx++;
-    } // end for
+    polys->GetNextCell( ids );
+    if( ids->GetNumberOfIds( ) == 3 )
+      man->triangle( ids->GetId( 0 ), ids->GetId( 1 ), ids->GetId( 2 ) );
+    else if( ids->GetNumberOfIds( ) == 4 )
+      man->quad(
+        ids->GetId( 0 ), ids->GetId( 1 ), ids->GetId( 2 ), ids->GetId( 3 )
+        );
   } // end for
 
   man->end( );

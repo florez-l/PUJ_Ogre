@@ -49,11 +49,14 @@ namespace PUJ_Ogre
   protected:
     void _process( pugi::xml_node& XMLRoot );
     void _nodes( pugi::xml_node& XMLNode );
+    void _camera( pugi::xml_node& XMLNode, Ogre::SceneNode* parent = 0 );
+
     void _parametric2(
       pugi::xml_node& XMLNode,
       const Ogre::String& name,
       const Ogre::String& material
       );
+
 
     // XML-related helpers
     static Ogre::String _attrib(
@@ -67,6 +70,14 @@ namespace PUJ_Ogre
     static bool _bool(
       const pugi::xml_node& XMLNode, const Ogre::String& attrib,
       bool defaultValue = false
+      );
+    static Ogre::ColourValue _colour(
+      const pugi::xml_node& XMLNode, const Ogre::String& attrib,
+      const Ogre::ColourValue& defaultValue = Ogre::ColourValue( 1, 1, 1, 1 )
+      );
+    static Ogre::Vector3 _vector(
+      const pugi::xml_node& XMLNode, const Ogre::String& attrib,
+      const Ogre::Vector3& defaultValue = Ogre::Vector3( 0, 0, 0 )
       );
     
     /* TODO

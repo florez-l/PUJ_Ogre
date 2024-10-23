@@ -1,8 +1,9 @@
 <scenexx formatVersion="0.0" physics="on">
+  <ambientLight colour="1 0 0 1"/>
   <nodes>
     <node name="sphere">
       <entity>
-        <parametric2 urange="0 2*pi open" vrange="0 pi closed" sampling="8 8">
+        <parametric2 urange="0 2pi closed" vrange="0 pi open" sampling="5 5">
           <x function="cos(u)sin(v)"/>
           <y function="sin(u)sin(v)"/>
           <z function="cos(v)"/>
@@ -10,4 +11,10 @@
       </entity>
     </node>
   </nodes>
+  <camera name="myCamera">
+    <clipping near="1e-3" far="100"/>
+    <position point="2 2 2"/>
+    <lookAt   point="0 0 0"/>
+    <up       point="0 1 0"/>
+  </camera>
 </scenexx>
